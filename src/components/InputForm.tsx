@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface InputFormProps {
-  onGenerate: (context: string, theme: string, description: string) => void;
+  onGenerate: (context: string, theme: string, description: string, imageGenerationType: string) => void;
   isLoading: boolean;
 }
 
@@ -9,10 +9,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const [context, setContext] = useState('');
   const [theme, setTheme] = useState('');
   const [description, setDescription] = useState('');
+  const [imageGenerationType, setImageGenerationType] = useState('random');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(context, theme, description);
+    onGenerate(context, theme, description, imageGenerationType);
   };
 
   return (
@@ -48,7 +49,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
           />
         </div>
         
-        <div className="mb-6">
+        <div className="mb-4">
           <label htmlFor="description" className="block mb-2 text-text-dark">
             文案描述
           </label>
@@ -60,6 +61,22 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
             className="input-field h-24"
             required
           />
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="imageGenerationType" className="block mb-2 text-text-dark">
+            图片生成方式
+          </label>
+          <select
+            id="imageGenerationType"
+            value={imageGenerationType}
+            onChange={(e) => setImageGenerationType(e.target.value)}
+            className="input-field"
+            required
+          >
+            <option value="random">随机配图</option>
+            <option value="web">网络搜图</option>
+          </select>
         </div>
         
         <button

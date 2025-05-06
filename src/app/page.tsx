@@ -13,10 +13,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
 
-  const handleGenerate = async (context: string, theme: string, description: string) => {
+  const handleGenerate = async (context: string, theme: string, description: string, imageGenerationType: string) => {
     setIsLoading(true);
     try {
-      const generatedResults = await generateContent(context, theme, description);
+      const generatedResults = await generateContent(context, theme, description, imageGenerationType);
       setResults(generatedResults);
       setDownloadedIds([]);
     } catch (error) {
