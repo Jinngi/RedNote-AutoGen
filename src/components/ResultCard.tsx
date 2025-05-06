@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 
@@ -11,6 +11,7 @@ interface ResultCardProps {
 
 const ResultCard: React.FC<ResultCardProps> = ({ id, content, imageUrl, onDownload }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
 
   const handleDownload = async () => {
     if (cardRef.current) {
@@ -21,6 +22,36 @@ const ResultCard: React.FC<ResultCardProps> = ({ id, content, imageUrl, onDownlo
       } catch (error) {
         console.error('下载图片时出错:', error);
       }
+    }
+  };
+
+  const handleDownloadFullCard = async () => {
+    setIsGeneratingCard(true);
+    try {
+      // 调用后端API生成完整卡片
+      const response = await fetch('/api/generate-card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          content,
+          imageUrl
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('生成卡片失败');
+      }
+
+      const blob = await response.blob();
+      saveAs(blob, `rednote-card-${id}.png`);
+      onDownload(id);
+    } catch (error) {
+      console.error('下载完整卡片时出错:', error);
+    } finally {
+      setIsGeneratingCard(false);
     }
   };
 
@@ -38,12 +69,19 @@ const ResultCard: React.FC<ResultCardProps> = ({ id, content, imageUrl, onDownlo
           <p className="text-text-dark whitespace-pre-line">{content}</p>
         </div>
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-end gap-3">
         <button
           onClick={handleDownload}
           className="btn-secondary"
         >
           下载图片
+        </button>
+        <button
+          onClick={handleDownloadFullCard}
+          disabled={isGeneratingCard}
+          className={`btn-primary ${isGeneratingCard ? 'opacity-70 cursor-not-allowed' : ''}`}
+        >
+          {isGeneratingCard ? '生成中...' : '下载完整卡片'}
         </button>
       </div>
     </div>
