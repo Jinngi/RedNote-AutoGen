@@ -31,6 +31,16 @@ export default function Home() {
     setDownloadedIds(prev => [...prev, id]);
   };
 
+  const handleContentUpdate = (id: string, newContent: string) => {
+    setResults(prev => 
+      prev.map(result => 
+        result.id === id 
+          ? { ...result, content: newContent } 
+          : result
+      )
+    );
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -60,6 +70,7 @@ export default function Home() {
                         content={result.content}
                         imageUrl={result.imageUrl}
                         onDownload={handleDownload}
+                        onContentUpdate={handleContentUpdate}
                       />
                     ))}
                   </div>
