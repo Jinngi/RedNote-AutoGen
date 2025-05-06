@@ -71,16 +71,23 @@ export async function generateContent(
     // 构建发送给LLM的提示词
     const prompt = `
     请你帮我生成三篇小红书风格的文案，每篇文案之间用三个连续的星号 *** 分隔。
-    主题：${theme}
-    上下文：${context}
-    描述：${description}
-    
+        
     要求：
     1. 每篇文案需要包含标题、正文、标签
     2. 标题吸引人，突出主题
     3. 正文内容丰富，符合小红书风格，语言生动活泼
     4. 标签使用井号(#)开头，至少包含3个标签
     5. 总体文字在200-500字之间
+    
+    【主题】
+    ${theme}
+    
+    【上下文】
+    ${context}
+    
+    【描述】
+    ${description}
+
     `;
 
     // 调用LLM API
