@@ -20,11 +20,6 @@ const Header: React.FC = () => {
                 联系我们
               </Link>
             </li>
-            <li>
-              <button className="btn-primary">
-                登录/注册
-              </button>
-            </li>
           </ul>
         </nav>
       </div>

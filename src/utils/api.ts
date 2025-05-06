@@ -18,65 +18,80 @@ export async function generateContent(
   description: string
 ): Promise<GenerateResult[]> {
   try {
-    // 这里模拟API调用，实际项目中应该连接到真实的API
-    // const response = await fetch('/api/generate', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ context, theme, description }),
-    // });
+    // 获取环境变量
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const llmModel = process.env.NEXT_PUBLIC_LLM_MODEL || 'gpt-3.5-turbo';
     
-    // if (!response.ok) {
-    //   throw new Error('API请求失败');
-    // }
-    
-    // return await response.json();
+    if (!apiKey || !apiBaseUrl) {
+      throw new Error('API配置缺失，请检查环境变量');
+    }
 
-    // 模拟响应，生成一些示例结果
-    return mockGenerateResults(context, theme, description);
+    // 构建发送给LLM的提示词
+    const prompt = `
+    请你帮我生成三篇小红书风格的文案，每篇文案之间用三个连续的星号 *** 分隔。
+    主题：${theme}
+    上下文：${context}
+    描述：${description}
+    
+    要求：
+    1. 每篇文案需要包含标题、正文、标签
+    2. 标题吸引人，突出主题
+    3. 正文内容丰富，符合小红书风格，语言生动活泼
+    4. 标签使用井号(#)开头，至少包含3个标签
+    5. 总体文字在200-500字之间
+    `;
+
+    // 调用LLM API
+    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: llmModel,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API请求失败: ${response.status} ${errorText}`);
+    }
+    
+    const responseData = await response.json();
+    
+    // 解析LLM返回的内容
+    const generatedText: string = responseData.choices[0]?.message?.content || '';
+    
+    // 按照分隔符拆分成多篇文案
+    const contentParts: string[] = generatedText.split('***').filter((part: string) => part.trim().length > 0);
+    
+    // 生成随机图片URL
+    const placeholderImages: string[] = [
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+      'https://images.unsplash.com/photo-1504297050568-910d24c426d3', 
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f'
+    ];
+    
+    // 转换成结果格式
+    return contentParts.map((content: string, index: number) => ({
+      id: `${Date.now()}-${index}`,
+      content: content.trim(),
+      imageUrl: placeholderImages[index % placeholderImages.length],
+    }));
+    
   } catch (error) {
     console.error('生成内容时出错:', error);
     throw error;
   }
-}
-
-/**
- * 模拟生成结果（用于开发测试）
- */
-function mockGenerateResults(
-  context: string,
-  theme: string,
-  description: string
-): GenerateResult[] {
-  // 生成2-4个随机结果
-  const count = Math.floor(Math.random() * 3) + 2;
-  const results: GenerateResult[] = [];
-
-  const placeholderImages = [
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-    'https://images.unsplash.com/photo-1504297050568-910d24c426d3', 
-    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f'
-  ];
-
-  const generateRandomText = () => {
-    const templates = [
-      `#${theme}#\n\n${context.substring(0, 20)}...\n\n${description}\n\n今天给大家分享一个超赞的小技巧！✨\n\n${Math.random().toString(36).substring(2, 10)}`,
-      `#${theme}分享#\n\n你知道吗？${context.substring(0, 15)}...\n\n${description}\n\n关注我，了解更多！❤️`,
-      `#${theme}攻略#\n\n分享一下我的${theme}心得\n\n${context.substring(0, 15)}\n\n${description}\n\n喜欢请点赞支持一下吧~`,
-      `#${theme}好物推荐#\n\n相信很多人都有这样的疑惑...\n\n${context.substring(0, 20)}\n\n${description}\n\n记得关注我，不定期分享更多干货！`,
-    ];
-    return templates[Math.floor(Math.random() * templates.length)];
-  };
-
-  for (let i = 0; i < count; i++) {
-    results.push({
-      id: `${Date.now()}-${i}`,
-      content: generateRandomText(),
-      imageUrl: placeholderImages[i % placeholderImages.length],
-    });
-  }
-
-  return results;
 } 
