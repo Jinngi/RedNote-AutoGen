@@ -605,7 +605,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="w-full" style={{ aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3' }}>
+              <div className="w-full relative" style={{ 
+                height: '60%', // 将图片高度限制为卡片的60%
+                maxHeight: '250px' // 添加最大高度限制
+              }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 

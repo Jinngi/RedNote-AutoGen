@@ -194,16 +194,14 @@ async function convertHtmlToImage(html: string, cardRatio: string = '4:5', image
     // 拦截请求，处理跨域图片问题
     await page.setRequestInterception(true);
     page.on('request', req => {
-      if (req.resourceType() === 'image' && (
-          req.url().includes('picsum.photos') || 
-          (imageUrl && req.url() === imageUrl)
-        )) {
-        // 对于外部图片，我们可以尝试绕过CORS
+      if (req.resourceType() === 'image') {
+        // 不限制特定网站，允许所有图片资源请求通过
         req.continue({
           headers: {
             ...req.headers(),
-            'Origin': 'https://picsum.photos',
-            'Referer': 'https://picsum.photos/'
+            // 添加通用的headers，避免跨域问题
+            'Origin': 'https://example.com',
+            'Referer': 'https://example.com/'
           }
         });
       } else {
@@ -211,8 +209,52 @@ async function convertHtmlToImage(html: string, cardRatio: string = '4:5', image
       }
     });
     
-    // 设置页面内容
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    // 设置页面内容，并增加超时时间确保图片加载完成
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    
+    // 额外增加一个等待所有图片加载的步骤
+    await page.evaluate(() => {
+      return new Promise((resolve) => {
+        // 检查现有图片是否已加载完成
+        const images = Array.from(document.querySelectorAll('img'));
+        const allImagesLoaded = images.every(img => img.complete);
+        
+        if (allImagesLoaded) {
+          resolve(true);
+          return;
+        }
+        
+        // 如果有图片未加载完成，等待它们加载
+        let loadedImages = 0;
+        const totalImages = images.length;
+        
+        // 监听加载事件
+        const onImageLoad = () => {
+          loadedImages++;
+          if (loadedImages === totalImages) {
+            resolve(true);
+          }
+        };
+        
+        images.forEach(img => {
+          if (img.complete) {
+            loadedImages++;
+          } else {
+            img.addEventListener('load', onImageLoad);
+            img.addEventListener('error', () => {
+              // 图片加载失败时显示占位图
+              img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFMEUwRTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5RTlFOUUiPuWbvueJh+aXoOazlei0qOmHjTwvdGV4dD48L3N2Zz4=';
+              onImageLoad();
+            });
+          }
+        });
+        
+        // 如果所有图片已经加载，立即解析
+        if (loadedImages === totalImages) {
+          resolve(true);
+        }
+      });
+    });
     
     // 获取内容的尺寸
     const contentSize = await page.evaluate((ratio) => {

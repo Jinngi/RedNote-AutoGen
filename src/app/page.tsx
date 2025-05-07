@@ -167,8 +167,10 @@ export default function Home() {
 
   // 添加下载功能
   const handleDownloadImage = async () => {
-    if (results.length > 0) {
-      const currentResult = results[currentCardIndex];
+    try {
+      // 确定当前是示例还是生成的内容
+      const currentResult = showExample ? exampleResult : results[currentCardIndex];
+      
       if (currentResult.imageUrl) {
         try {
           logger.info(`开始下载图片: ID=${currentResult.id}`);
@@ -196,65 +198,86 @@ export default function Home() {
         logger.warn('尝试下载图片，但没有图片URL');
         alert('没有图片可下载');
       }
+    } catch (error) {
+      console.error('处理图片下载时出错:', error);
+      logger.error(`处理图片下载失败: ${error instanceof Error ? error.message : String(error)}`);
+      alert('处理图片下载失败，请检查控制台获取详细错误信息');
     }
   };
 
   const handleDownloadFullCard = async () => {
     setIsGeneratingCard(true);
     try {
-      if (results.length > 0) {
-        const currentResult = results[currentCardIndex];
-        logger.info(`开始生成完整卡片: ID=${currentResult.id}`);
-        
-        // 添加随机时间戳避免缓存
-        const timestamp = new Date().getTime();
-        
-        try {
-          // 调用后端API生成完整卡片
-          const response = await fetch(`/api/generate-card?t=${timestamp}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: currentResult.id,
-              content: currentResult.content,
-              imageUrl: currentResult.imageUrl,
-              cardStyle: currentCardStyle,
-              colorTheme: currentColorTheme,
-              cardRatio: currentCardRatio
-            }),
-          });
+      // 获取当前卡片数据（示例或生成的内容）
+      const currentResult = showExample ? exampleResult : results[currentCardIndex];
+      
+      logger.info(`开始生成完整卡片: ID=${currentResult.id}`);
+      
+      // 添加随机时间戳避免缓存
+      const timestamp = new Date().getTime();
+      
+      try {
+        // 调用后端API生成完整卡片
+        const response = await fetch(`/api/generate-card?t=${timestamp}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: currentResult.id,
+            content: currentResult.content,
+            imageUrl: currentResult.imageUrl,
+            cardStyle: currentCardStyle,
+            colorTheme: currentColorTheme,
+            cardRatio: currentCardRatio
+          }),
+        });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API响应错误:', response.status, errorText);
-            logger.error(`生成卡片API响应错误: ${response.status} ${errorText}`);
-            throw new Error(`生成卡片失败: ${response.status} ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API响应错误:', response.status, errorText);
+          logger.error(`生成卡片API响应错误: ${response.status} ${errorText}`);
+          throw new Error(`生成卡片失败: ${response.status} ${errorText}`);
+        }
+
+        logger.info('API响应成功，准备下载卡片...');
+        const blob = await response.blob();
+        
+        // 使用a标签下载，确保兼容性
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `rednote-card-${currentResult.id}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        handleDownload(currentResult.id);
+        logger.success(`卡片下载完成: ID=${currentResult.id}`);
+      } catch (apiError) {
+        console.error('API调用失败，尝试使用前端渲染:', apiError);
+        logger.error(`API调用失败: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
+        logger.info('尝试使用前端方式下载...');
+        alert('通过API生成卡片失败，正在尝试使用前端方式下载...');
+        
+        // 降级方案：如果API失败，使用前端方法
+        if (showExample) {
+          // 对示例卡片调用简单的图片下载
+          try {
+            // 获取图片数据
+            const response = await fetch(exampleResult.imageUrl);
+            if (!response.ok) {
+              throw new Error(`图片下载失败: ${response.status}`);
+            }
+            const blob = await response.blob();
+            saveAs(blob, `rednote-image-${exampleResult.id}.jpg`);
+            handleDownload(exampleResult.id);
+          } catch (imgError) {
+            logger.error(`示例图片下载失败: ${imgError instanceof Error ? imgError.message : String(imgError)}`);
           }
-
-          logger.info('API响应成功，准备下载卡片...');
-          const blob = await response.blob();
-          
-          // 使用a标签下载，确保兼容性
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `rednote-card-${currentResult.id}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-          
-          handleDownload(currentResult.id);
-          logger.success(`卡片下载完成: ID=${currentResult.id}`);
-        } catch (apiError) {
-          console.error('API调用失败，尝试使用前端渲染:', apiError);
-          logger.error(`API调用失败: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
-          logger.info('尝试使用前端方式下载...');
-          alert('通过API生成卡片失败，正在尝试使用前端方式下载...');
-          
-          // 降级方案：如果API失败，使用前端方法
+        } else {
+          // 对生成的卡片使用标准的下载方法
           handleDownloadImage();
         }
       }
@@ -510,8 +533,8 @@ export default function Home() {
                       </button>
                       <button
                         onClick={handleDownloadFullCard}
-                        disabled={isGeneratingCard || isEditing || showExample}
-                        className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        disabled={isGeneratingCard || isEditing}
+                        className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
                       >
                         {isGeneratingCard ? '生成中...' : '下载完整卡片'}
                       </button>
