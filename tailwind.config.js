@@ -19,6 +19,13 @@ module.exports = {
       fontFamily: {
         sans: ['PingFang SC', 'sans-serif'],
       },
+      container: {
+        padding: {
+          DEFAULT: '0.5rem',
+          sm: '0.75rem',
+          md: '1rem',
+        },
+      },
     },
   },
   plugins: [],

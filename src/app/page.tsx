@@ -95,8 +95,8 @@ export default function Home() {
     <div className="flex flex-col h-screen">
       <Header />
       
-      <div className="container mx-auto px-4 py-4 flex-grow overflow-hidden">
-        <div className="flex flex-col md:flex-row gap-4 h-full">
+      <div className="container mx-auto px-2 py-4 flex-grow overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-2 h-full">
           {/* 左侧区域 */}
           <div className="w-full md:w-1/3 space-y-4 md:h-full md:overflow-auto">
             {/* 输入表单 */}
