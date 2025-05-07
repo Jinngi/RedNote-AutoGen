@@ -12,7 +12,6 @@
     "package.json"
   ],
   "win": {
-    "icon": "resources/icon.ico",
     "target": [
       {
         "target": "nsis",
@@ -24,9 +23,6 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "resources/icon.ico",
-    "uninstallerIcon": "resources/icon.ico",
-    "installerHeaderIcon": "resources/icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "RedNote AutoGen"
