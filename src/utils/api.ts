@@ -8,6 +8,21 @@ export interface GenerateResult {
 }
 
 /**
+ * 图像生成任务状态
+ */
+export interface ImageTaskStatus {
+  id: string;
+  status: string;
+  progress: number;
+  total_steps: number;
+  prompt: string;
+  seed: number;
+  created_at: string;
+  completed_at?: string;
+  error?: string;
+}
+
+/**
  * 根据文本内容搜索相关图片
  * @param searchQuery 搜索关键词
  * @returns 图片URL
@@ -53,6 +68,134 @@ function getRandomImage(): string {
   const imageUrl = `https://picsum.photos/seed/random${randomId}/${width}/${height}`;
   logger.success(`成功获取随机图片: ${imageUrl}`);
   return imageUrl;
+}
+
+/**
+ * 创建图像生成任务
+ * @param prompt 图像描述提示词
+ * @param seed 随机种子
+ * @returns 任务ID
+ */
+export async function createImageTask(prompt: string, seed: number = 42): Promise<string> {
+  try {
+    const imageServiceUrl = process.env.NEXT_PUBLIC_IMAGE_SERVICE_URL;
+    
+    if (!imageServiceUrl) {
+      logger.error('图像服务配置缺失，请检查NEXT_PUBLIC_IMAGE_SERVICE_URL环境变量');
+      throw new Error('图像服务配置缺失，请检查环境变量');
+    }
+
+    logger.info(`开始创建图像生成任务，提示词: "${prompt.substring(0, 50)}..."，种子: ${seed}`);
+    
+    const response = await fetch(`${imageServiceUrl}/api/generate-async`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt,
+        seed
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`创建图像任务失败: ${response.status} ${errorText}`);
+      throw new Error(`创建图像任务失败: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    logger.success(`图像任务创建成功，任务ID: ${data.task_id}`);
+    return data.task_id;
+    
+  } catch (error) {
+    logger.error(`创建图像任务出错: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+}
+
+/**
+ * 获取图像生成任务的状态
+ * @param taskId 任务ID
+ * @returns 任务状态信息
+ */
+export async function getImageTaskStatus(taskId: string): Promise<ImageTaskStatus> {
+  try {
+    const imageServiceUrl = process.env.NEXT_PUBLIC_IMAGE_SERVICE_URL;
+    
+    if (!imageServiceUrl) {
+      logger.error('图像服务配置缺失，请检查NEXT_PUBLIC_IMAGE_SERVICE_URL环境变量');
+      throw new Error('图像服务配置缺失，请检查环境变量');
+    }
+
+    logger.info(`查询图像任务状态: ${taskId}`);
+    
+    const response = await fetch(`${imageServiceUrl}/api/task/${taskId}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`查询图像任务状态失败: ${response.status} ${errorText}`);
+      throw new Error(`查询图像任务状态失败: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    logger.info(`任务 ${taskId} 状态: ${data.status}, 进度: ${data.progress}/${data.total_steps}`);
+    return data;
+    
+  } catch (error) {
+    logger.error(`查询图像任务状态出错: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+}
+
+/**
+ * 获取已完成图像任务的结果
+ * @param taskId 任务ID
+ * @returns 图像数据的URL
+ */
+export async function getImageTaskResult(taskId: string): Promise<string> {
+  try {
+    const imageServiceUrl = process.env.NEXT_PUBLIC_IMAGE_SERVICE_URL;
+    
+    if (!imageServiceUrl) {
+      logger.error('图像服务配置缺失，请检查NEXT_PUBLIC_IMAGE_SERVICE_URL环境变量');
+      throw new Error('图像服务配置缺失，请检查环境变量');
+    }
+
+    logger.info(`获取图像任务结果: ${taskId}`);
+    
+    const response = await fetch(`${imageServiceUrl}/api/result/${taskId}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`获取图像任务结果失败: ${response.status} ${errorText}`);
+      throw new Error(`获取图像任务结果失败: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    logger.success(`获取图像任务结果成功，任务ID: ${taskId}`);
+    
+    // 使用 blob URL 来存储 base64 图像数据
+    const base64Data = data.image_base64;
+    if (!base64Data) {
+      throw new Error('图像数据为空');
+    }
+    
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    const imageUrl = URL.createObjectURL(blob);
+    
+    return imageUrl;
+    
+  } catch (error) {
+    logger.error(`获取图像任务结果出错: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
 }
 
 /**

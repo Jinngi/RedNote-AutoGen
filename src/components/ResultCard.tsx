@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
+import ImageGenerationProgress from './ImageGenerationProgress';
 
 interface ResultCardProps {
   id: string;
@@ -11,6 +12,10 @@ interface ResultCardProps {
   cardRatio: string;
   onDownload: (id: string) => void;
   onContentUpdate?: (id: string, newContent: string) => void;
+  isGeneratingImage?: boolean;
+  imageGenerationProgress?: number;
+  imageGenerationTotalSteps?: number;
+  imageGenerationStatus?: string;
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({ 
@@ -21,7 +26,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
   colorTheme,
   cardRatio,
   onDownload,
-  onContentUpdate 
+  onContentUpdate,
+  isGeneratingImage = false,
+  imageGenerationProgress = 0,
+  imageGenerationTotalSteps = 100,
+  imageGenerationStatus = 'PENDING'
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
@@ -254,10 +263,39 @@ const ResultCard: React.FC<ResultCardProps> = ({
     setEditedContent(content); // 恢复原始内容
   };
 
+  // 渲染图像内容，包括生成中和已生成的状态
+  const renderImageContent = (style: React.CSSProperties = {}) => {
+    if (isGeneratingImage) {
+      // 显示生成进度组件
+      return (
+        <div style={style}>
+          <ImageGenerationProgress 
+            progress={imageGenerationProgress} 
+            totalSteps={imageGenerationTotalSteps}
+            status={imageGenerationStatus}
+          />
+        </div>
+      );
+    } else if (imageUrl) {
+      // 显示已生成的图像
+      return (
+        <img 
+          src={imageUrl} 
+          alt={title} 
+          className="w-full h-full object-cover"
+          style={style}
+        />
+      );
+    } else {
+      // 无图模式或图片URL为空
+      return null;
+    }
+  };
+
   // 根据卡片样式渲染不同的内容
   const renderCardContent = () => {
     // 无图模式判断
-    const isTextOnly = cardStyle === 'text-only' || !imageUrl;
+    const isTextOnly = cardStyle === 'text-only' || (!imageUrl && !isGeneratingImage);
     
     // 内容编辑模式
     if (isEditing) {
@@ -294,11 +332,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 height: '100%',
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
-                <img 
-                  src={imageUrl} 
-                  alt={title} 
-                  className="w-full h-full object-cover"
-                />
+                {renderImageContent()}
               </div>
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
@@ -339,11 +373,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 height: '100%',
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
-                <img 
-                  src={imageUrl} 
-                  alt={title} 
-                  className="w-full h-full object-cover"
-                />
+                {renderImageContent()}
               </div>
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
@@ -378,13 +408,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
             }}
           >
-            {!isTextOnly && (
-              <img 
-                src={imageUrl} 
-                alt={title} 
-                className="w-full h-full object-cover"
-              />
-            )}
+            {!isTextOnly && renderImageContent({ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 })}
             <div 
               className="absolute inset-0 p-6 flex flex-col justify-between overflow-auto" 
               style={{ 
@@ -454,11 +478,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <div className="overflow-hidden rounded-lg h-full" style={{ 
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
-                <img 
-                  src={imageUrl} 
-                  alt={title} 
-                  className="w-full h-full object-cover"
-                />
+                {renderImageContent()}
               </div>
             )}
             
@@ -522,11 +542,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                         aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
                       }}
                     >
-                      <img 
-                        src={imageUrl} 
-                        alt={title} 
-                        className="w-full h-full object-cover"
-                      />
+                      {renderImageContent()}
                     </div>
                   </div>
                 )}
@@ -609,11 +625,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 height: '60%', // 将图片高度限制为卡片的60%
                 maxHeight: '250px' // 添加最大高度限制
               }}>
-                <img 
-                  src={imageUrl} 
-                  alt={title} 
-                  className="w-full h-full object-cover"
-                />
+                {renderImageContent()}
               </div>
             )}
             <div className="p-6 flex-grow overflow-auto">

@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import InputForm from '@/components/InputForm';
 import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
-import { generateContent, GenerateResult } from '@/utils/api';
+import { generateContent, GenerateResult, createImageTask, getImageTaskStatus, getImageTaskResult } from '@/utils/api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import TabPanel from '@/components/TabPanel';
 import LogPanel from '@/components/LogPanel';
 import logger, { LogEntry } from '@/utils/logger';
+import '../styles/globals.css';
 
 interface ElectronWindow extends Window {
   electron?: {
@@ -25,22 +26,25 @@ export default function Home() {
   const [results, setResults] = useState<GenerateResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
-  const [currentCardStyle, setCurrentCardStyle] = useState('standard');
+  const [currentCardStyle, setCurrentCardStyle] = useState('default');
   const [currentColorTheme, setCurrentColorTheme] = useState('redbook');
   const [currentCardRatio, setCurrentCardRatio] = useState('4:5');
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
-  // 添加当前显示的卡片索引状态
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isElectron, setIsElectron] = useState(false);
-  // 添加状态来管理编辑模式和生成卡片状态
   const [isEditing, setIsEditing] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
-  // 添加编辑内容状态
   const [editedContent, setEditedContent] = useState('');
-  // 添加默认示例状态
   const [showExample, setShowExample] = useState(true);
-  // 添加日志状态
   const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  // 添加图像生成状态管理
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageGenerationProgress, setImageGenerationProgress] = useState(0);
+  const [imageGenerationTotalSteps, setImageGenerationTotalSteps] = useState(100);
+  const [imageGenerationStatus, setImageGenerationStatus] = useState('PENDING');
+  const [imageTaskId, setImageTaskId] = useState<string | null>(null);
+  const imagePollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // 默认示例内容
   const exampleResult: GenerateResult = {
@@ -68,6 +72,124 @@ export default function Home() {
     };
   }, []);
 
+  // 添加监听器，在组件卸载时清除轮询定时器
+  useEffect(() => {
+    return () => {
+      if (imagePollingRef.current) {
+        clearTimeout(imagePollingRef.current);
+      }
+    };
+  }, []);
+
+  // 添加任务监控函数
+  const pollImageGenerationStatus = async (taskId: string) => {
+    try {
+      const taskStatus = await getImageTaskStatus(taskId);
+      
+      // 更新状态
+      setImageGenerationProgress(taskStatus.progress);
+      setImageGenerationTotalSteps(taskStatus.total_steps);
+      setImageGenerationStatus(taskStatus.status);
+      
+      // 将状态转为大写以统一进行比较
+      const status = taskStatus.status.toUpperCase();
+      
+      // 检查是否完成
+      if (status === 'COMPLETED') {
+        // 获取生成的图片
+        const imageUrl = await getImageTaskResult(taskId);
+        
+        // 更新结果中的图片URL
+        setResults(prev => 
+          prev.map((result, idx) => 
+            idx === currentCardIndex 
+              ? { ...result, imageUrl } 
+              : result
+          )
+        );
+        
+        // 重置生成状态
+        setIsGeneratingImage(false);
+        setImageTaskId(null);
+        logger.success(`图像生成完成: ${taskId}`);
+        
+        // 清除轮询计时器
+        if (imagePollingRef.current) {
+          clearTimeout(imagePollingRef.current);
+          imagePollingRef.current = null;
+        }
+      } else if (status === 'FAILED') {
+        // 处理失败情况
+        setIsGeneratingImage(false);
+        setImageTaskId(null);
+        logger.error(`图像生成失败: ${taskStatus.error || '未知错误'}`);
+        
+        // 清除轮询计时器
+        if (imagePollingRef.current) {
+          clearTimeout(imagePollingRef.current);
+          imagePollingRef.current = null;
+        }
+      } else {
+        // 继续轮询
+        imagePollingRef.current = setTimeout(() => pollImageGenerationStatus(taskId), 2000);
+      }
+    } catch (error) {
+      logger.error(`查询图像状态失败: ${error instanceof Error ? error.message : String(error)}`);
+      // 失败后延迟重试
+      imagePollingRef.current = setTimeout(() => pollImageGenerationStatus(taskId), 5000);
+    }
+  };
+  
+  // 处理AI生成图片
+  const handleGenerateImage = async () => {
+    if (results.length === 0 || isGeneratingImage) return;
+    
+    try {
+      // 确保清除任何现有的轮询定时器
+      if (imagePollingRef.current) {
+        clearTimeout(imagePollingRef.current);
+        imagePollingRef.current = null;
+      }
+      
+      const currentResult = results[currentCardIndex];
+      const { title } = parseContent(currentResult.content);
+      
+      logger.info(`开始为文案生成AI图片，标题: ${title}`);
+      setIsGeneratingImage(true);
+      setImageGenerationProgress(0);
+      setImageGenerationStatus('PENDING');
+      
+      // 提取文案标题作为提示词
+      const prompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
+      
+      // 创建图像生成任务（异步）
+      const taskId = await createImageTask(prompt);
+      setImageTaskId(taskId);
+      logger.info(`图像生成任务已创建，任务ID: ${taskId}，开始监控任务状态`);
+      
+      // 立即开始轮询任务状态
+      pollImageGenerationStatus(taskId);
+      
+    } catch (error) {
+      logger.error(`生成AI图片失败: ${error instanceof Error ? error.message : String(error)}`);
+      setIsGeneratingImage(false);
+      setImageTaskId(null);
+    }
+  };
+  
+  // 辅助函数：解析内容获取标题
+  const parseContent = (content: string) => {
+    const lines = content.split('\n').filter(line => line.trim());
+    const title = lines[0] || '小红书文案';
+    const body = lines.slice(1).join('\n');
+    
+    // 提取标签
+    const tagRegex = /#[^\s#]+/g;
+    const tags = content.match(tagRegex) || [];
+    
+    return { title, body, tags };
+  };
+
   // 是否显示左侧样式选择器
   const showStyleSelector = results.length > 0;
 
@@ -94,6 +216,12 @@ export default function Home() {
       setShowExample(false); // 隐藏示例
       // 重置当前卡片索引
       setCurrentCardIndex(0);
+      // 重置图像生成状态
+      setIsGeneratingImage(false);
+      setImageTaskId(null);
+      if (imagePollingRef.current) {
+        clearTimeout(imagePollingRef.current);
+      }
       logger.success(`成功生成 ${generatedResults.length} 个内容`);
     } catch (error) {
       console.error('生成内容时出错:', error);
@@ -332,6 +460,67 @@ export default function Home() {
     }
   };
 
+  // 渲染底部按钮组
+  const renderBottomButtons = () => {
+    if (isEditing) {
+      return (
+        <>
+          <button
+            onClick={saveEditing}
+            className="btn-primary mr-2"
+          >
+            保存
+          </button>
+          <button
+            onClick={cancelEditing}
+            className="btn-secondary"
+          >
+            取消
+          </button>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <button
+            onClick={startEditing}
+            disabled={showExample}
+            className={`btn-secondary ${showExample ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            编辑文本
+          </button>
+          <button
+            onClick={handleGenerateImage}
+            disabled={showExample || isGeneratingImage || isEditing || results.length === 0}
+            className={`btn-secondary ${(showExample || isGeneratingImage || isEditing || results.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            AI生图
+          </button>
+          <button
+            onClick={handleDownloadImage}
+            className="btn-secondary"
+          >
+            下载图片
+          </button>
+          <button
+            onClick={handleDownloadFullCard}
+            disabled={isGeneratingCard || isEditing}
+            className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isGeneratingCard ? '生成中...' : '下载完整卡片'}
+          </button>
+          <button
+            onClick={handleDownloadZip}
+            disabled={isGeneratingCard || isEditing || showExample}
+            className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            下载压缩包
+          </button>
+        </>
+      );
+    }
+  };
+
   // 创建结果面板内容
   const resultPanelContent = (
     <div className="flex-1 overflow-hidden flex flex-col">
@@ -367,6 +556,10 @@ export default function Home() {
                 cardRatio={currentCardRatio}
                 onDownload={handleDownload}
                 onContentUpdate={handleContentUpdate}
+                isGeneratingImage={isGeneratingImage}
+                imageGenerationProgress={imageGenerationProgress}
+                imageGenerationTotalSteps={imageGenerationTotalSteps}
+                imageGenerationStatus={imageGenerationStatus}
               />
             )}
           </>
@@ -501,52 +694,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex gap-2">
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={saveEditing}
-                        className="btn-primary mr-2"
-                      >
-                        保存
-                      </button>
-                      <button
-                        onClick={cancelEditing}
-                        className="btn-secondary"
-                      >
-                        取消
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={startEditing}
-                        disabled={showExample}
-                        className={`btn-secondary ${showExample ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        编辑文本
-                      </button>
-                      <button
-                        onClick={handleDownloadImage}
-                        className="btn-secondary"
-                      >
-                        下载图片
-                      </button>
-                      <button
-                        onClick={handleDownloadFullCard}
-                        disabled={isGeneratingCard || isEditing}
-                        className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
-                      >
-                        {isGeneratingCard ? '生成中...' : '下载完整卡片'}
-                      </button>
-                      <button
-                        onClick={handleDownloadZip}
-                        disabled={isGeneratingCard || isEditing || showExample}
-                        className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
-                      >
-                        下载压缩包
-                      </button>
-                    </>
-                  )}
+                  {renderBottomButtons()}
                 </div>
               </div>
             )}
