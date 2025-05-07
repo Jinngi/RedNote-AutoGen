@@ -17,4 +17,15 @@ export interface GenerateResponse {
   results: RedNoteResult[];
   success: boolean;
   message?: string;
+}
+
+export interface AppState {
+  results: RedNoteResult[];
+}
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
 } 

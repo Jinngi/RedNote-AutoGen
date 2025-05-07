@@ -1,4 +1,6 @@
 // 接口定义
+import logger from './logger';
+
 export interface GenerateResult {
   id: string;
   content: string;
@@ -12,6 +14,7 @@ export interface GenerateResult {
  */
 async function searchImage(searchQuery: string): Promise<string> {
   try {
+    logger.info(`搜索图片，关键词: ${searchQuery.substring(0, 30)}...`);
     // 提取标题作为搜索关键词
     const titleMatch = searchQuery.match(/^(.+?)(?:\n|$)/);
     const searchTerm = titleMatch ? titleMatch[1].trim() : searchQuery.substring(0, 50);
@@ -22,11 +25,16 @@ async function searchImage(searchQuery: string): Promise<string> {
     const randomId = Math.floor(Math.random() * 1000);
     
     // 返回一个带有搜索词作为参数的图片URL，但实际上是从可靠的图片源获取
-    return `https://picsum.photos/seed/${seed}${randomId}/800/600`;
+    const imageUrl = `https://picsum.photos/seed/${seed}${randomId}/800/600`;
+    logger.success(`成功获取图片: ${imageUrl}`);
+    return imageUrl;
   } catch (error) {
     console.error('搜索图片时出错:', error);
+    logger.error(`搜索图片失败: ${error instanceof Error ? error.message : String(error)}`);
     // 如果搜索失败，返回一个默认图片，使用可靠的图片源
-    return 'https://picsum.photos/800/600';
+    const fallbackUrl = 'https://picsum.photos/800/600';
+    logger.warn(`使用默认图片: ${fallbackUrl}`);
+    return fallbackUrl;
   }
 }
 
@@ -35,13 +43,16 @@ async function searchImage(searchQuery: string): Promise<string> {
  * @returns 随机图片URL
  */
 function getRandomImage(): string {
+  logger.info('获取随机图片');
   // 生成随机参数以确保每次获取不同的图片
   const randomId = Math.floor(Math.random() * 10000);
   const width = 800;
   const height = 600;
   
   // 使用 Picsum.photos 提供的随机图片服务
-  return `https://picsum.photos/seed/random${randomId}/${width}/${height}`;
+  const imageUrl = `https://picsum.photos/seed/random${randomId}/${width}/${height}`;
+  logger.success(`成功获取随机图片: ${imageUrl}`);
+  return imageUrl;
 }
 
 /**
@@ -59,12 +70,16 @@ export async function generateContent(
   imageGenerationType: string = 'random'
 ): Promise<GenerateResult[]> {
   try {
+    logger.info('开始生成内容...');
+    logger.info(`参数: 主题="${theme}", 图片生成方式="${imageGenerationType}"`);
+    
     // 获取环境变量
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const llmModel = process.env.NEXT_PUBLIC_LLM_MODEL || 'gpt-3.5-turbo';
     
     if (!apiKey || !apiBaseUrl) {
+      logger.error('API配置缺失，请检查环境变量');
       throw new Error('API配置缺失，请检查环境变量');
     }
 
@@ -90,6 +105,9 @@ export async function generateContent(
 
     `;
 
+    logger.info(`使用模型: ${llmModel}`);
+    logger.info('发送API请求...');
+
     // 调用LLM API
     const response = await fetch(`${apiBaseUrl}/chat/completions`, {
       method: 'POST',
@@ -112,9 +130,11 @@ export async function generateContent(
     
     if (!response.ok) {
       const errorText = await response.text();
+      logger.error(`API请求失败: ${response.status} ${errorText}`);
       throw new Error(`API请求失败: ${response.status} ${errorText}`);
     }
     
+    logger.success('API请求成功，正在解析响应...');
     const responseData = await response.json();
     
     // 解析LLM返回的内容
@@ -122,6 +142,7 @@ export async function generateContent(
     
     // 按照分隔符拆分成多篇文案
     const contentParts: string[] = generatedText.split('***').filter((part: string) => part.trim().length > 0);
+    logger.info(`成功生成 ${contentParts.length} 篇文案`);
     
     // 生成结果数组
     const results: GenerateResult[] = [];
@@ -131,28 +152,38 @@ export async function generateContent(
       const content = contentParts[i].trim();
       let imageUrl = '';
       
+      logger.info(`处理第 ${i+1} 篇文案`);
+      
       // 无图模式下不生成图片
       if (imageGenerationType === 'none') {
+        logger.info('无图模式，跳过图片生成');
         imageUrl = '';
       } else if (imageGenerationType === 'web') {
         // 基于文案内容搜索相关图片
+        logger.info('使用Web搜索模式生成图片');
         imageUrl = await searchImage(content);
       } else {
         // 随机生成图片
+        logger.info('使用随机图片模式');
         imageUrl = getRandomImage();
       }
       
+      const id = `${Date.now()}-${i}`;
       results.push({
-        id: `${Date.now()}-${i}`,
+        id,
         content,
         imageUrl,
       });
+      
+      logger.success(`完成第 ${i+1} 篇文案(ID: ${id})处理`);
     }
     
+    logger.success(`内容生成完成，共 ${results.length} 个结果`);
     return results;
     
   } catch (error) {
     console.error('生成内容时出错:', error);
+    logger.error(`生成内容失败: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 } 

@@ -10,6 +10,9 @@ import StyleSelector from '../components/StyleSelector';
 import { generateContent, GenerateResult } from '@/utils/api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import TabPanel from '@/components/TabPanel';
+import LogPanel from '@/components/LogPanel';
+import logger, { LogEntry } from '@/utils/logger';
 
 interface ElectronWindow extends Window {
   electron?: {
@@ -36,6 +39,8 @@ export default function Home() {
   const [editedContent, setEditedContent] = useState('');
   // 添加默认示例状态
   const [showExample, setShowExample] = useState(true);
+  // 添加日志状态
+  const [logs, setLogs] = useState<LogEntry[]>([]);
 
   // 默认示例内容
   const exampleResult: GenerateResult = {
@@ -49,6 +54,18 @@ export default function Home() {
     if (typeof window !== 'undefined' && (window as ElectronWindow).electron) {
       setIsElectron(true);
     }
+    
+    // 添加日志记录示例
+    logger.info('应用程序已启动');
+    
+    // 订阅日志更新
+    const unsubscribe = logger.onLogsUpdated(updatedLogs => {
+      setLogs(updatedLogs);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // 是否显示左侧样式选择器
@@ -64,7 +81,9 @@ export default function Home() {
     cardRatio: string
   ) => {
     setIsLoading(true);
+    logger.info('开始生成内容...');
     try {
+      logger.info(`生成参数: 上下文=${context}, 主题=${theme}, 描述=${description}, 图片生成类型=${imageGenerationType}`);
       const generatedResults = await generateContent(context, theme, description, imageGenerationType);
       setResults(generatedResults);
       setDownloadedIds([]);
@@ -75,8 +94,10 @@ export default function Home() {
       setShowExample(false); // 隐藏示例
       // 重置当前卡片索引
       setCurrentCardIndex(0);
+      logger.success(`成功生成 ${generatedResults.length} 个内容`);
     } catch (error) {
       console.error('生成内容时出错:', error);
+      logger.error(`生成内容失败: ${error instanceof Error ? error.message : String(error)}`);
       // 这里可以添加错误提示UI
     } finally {
       setIsLoading(false);
@@ -150,7 +171,7 @@ export default function Home() {
       const currentResult = results[currentCardIndex];
       if (currentResult.imageUrl) {
         try {
-          console.log('开始下载图片...');
+          logger.info(`开始下载图片: ID=${currentResult.id}`);
           
           // 获取图片数据
           const response = await fetch(currentResult.imageUrl);
@@ -164,13 +185,15 @@ export default function Home() {
           saveAs(blob, `rednote-image-${currentResult.id}.jpg`);
           
           handleDownload(currentResult.id);
-          console.log('图片下载完成');
+          logger.success(`图片下载完成: ID=${currentResult.id}`);
         } catch (error) {
           console.error('下载图片时出错:', error);
+          logger.error(`下载图片失败: ${error instanceof Error ? error.message : String(error)}`);
           alert('下载图片失败，请检查控制台获取详细错误信息');
         }
       } else {
         console.error('没有图片可下载');
+        logger.warn('尝试下载图片，但没有图片URL');
         alert('没有图片可下载');
       }
     }
@@ -181,7 +204,7 @@ export default function Home() {
     try {
       if (results.length > 0) {
         const currentResult = results[currentCardIndex];
-        console.log('开始生成完整卡片...');
+        logger.info(`开始生成完整卡片: ID=${currentResult.id}`);
         
         // 添加随机时间戳避免缓存
         const timestamp = new Date().getTime();
@@ -206,10 +229,11 @@ export default function Home() {
           if (!response.ok) {
             const errorText = await response.text();
             console.error('API响应错误:', response.status, errorText);
+            logger.error(`生成卡片API响应错误: ${response.status} ${errorText}`);
             throw new Error(`生成卡片失败: ${response.status} ${errorText}`);
           }
 
-          console.log('API响应成功，准备下载卡片...');
+          logger.info('API响应成功，准备下载卡片...');
           const blob = await response.blob();
           
           // 使用a标签下载，确保兼容性
@@ -223,9 +247,11 @@ export default function Home() {
           window.URL.revokeObjectURL(url);
           
           handleDownload(currentResult.id);
-          console.log('卡片下载完成');
+          logger.success(`卡片下载完成: ID=${currentResult.id}`);
         } catch (apiError) {
           console.error('API调用失败，尝试使用前端渲染:', apiError);
+          logger.error(`API调用失败: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
+          logger.info('尝试使用前端方式下载...');
           alert('通过API生成卡片失败，正在尝试使用前端方式下载...');
           
           // 降级方案：如果API失败，使用前端方法
@@ -234,6 +260,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('下载完整卡片时出错:', error);
+      logger.error(`下载完整卡片失败: ${error instanceof Error ? error.message : String(error)}`);
       alert('下载卡片失败，请检查控制台获取详细错误信息');
     } finally {
       setIsGeneratingCard(false);
@@ -281,6 +308,91 @@ export default function Home() {
       }
     }
   };
+
+  // 创建结果面板内容
+  const resultPanelContent = (
+    <div className="flex-1 overflow-hidden flex flex-col">
+      <h2 className="text-xl font-bold text-text-dark mb-3">
+        {results.length > 0 ? `生成结果 (${currentCardIndex + 1}/${results.length})` : '预览效果'}
+      </h2>
+      <div className="flex-1 overflow-auto pb-16">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-redbook">正在生成中，请稍候...</div>
+          </div>
+        ) : results.length > 0 ? (
+          <>
+            {isEditing ? (
+              <div className="bg-white rounded-lg p-4 mb-6">
+                <textarea
+                  className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  autoFocus
+                  style={{
+                    minHeight: '200px',
+                    height: 'auto',
+                    resize: 'vertical' // 允许用户垂直调整大小
+                  }}
+                />
+              </div>
+            ) : (
+              <ResultCard
+                key={results[currentCardIndex].id}
+                id={results[currentCardIndex].id}
+                content={results[currentCardIndex].content}
+                imageUrl={results[currentCardIndex].imageUrl}
+                cardStyle={currentCardStyle}
+                colorTheme={currentColorTheme}
+                cardRatio={currentCardRatio}
+                onDownload={handleDownload}
+                onContentUpdate={handleContentUpdate}
+              />
+            )}
+          </>
+        ) : showExample ? (
+          // 显示默认示例
+          <ResultCard
+            key={exampleResult.id}
+            id={exampleResult.id}
+            content={exampleResult.content}
+            imageUrl={exampleResult.imageUrl}
+            cardStyle={currentCardStyle}
+            colorTheme={currentColorTheme}
+            cardRatio={currentCardRatio}
+            onDownload={handleDownload}
+            onContentUpdate={handleContentUpdate}
+          />
+        ) : (
+          <div className="flex justify-center items-center h-64 bg-light-gray rounded-lg">
+            <div className="text-center">
+              <p className="text-text-medium mb-2">请在左侧填写内容并点击生成按钮</p>
+              <p className="text-text-medium text-sm">生成的小红书文案与图片将显示在这里</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // 创建日志面板内容
+  const logPanelContent = (
+    <LogPanel logs={logs} />
+  );
+
+  // 定义标签页
+  const tabs = [
+    {
+      id: 'result',
+      label: '生成结果',
+      content: resultPanelContent
+    },
+    {
+      id: 'log',
+      label: '运行日志',
+      content: logPanelContent
+    }
+  ];
 
   // 根据是否是Electron环境决定容器类名
   const containerClassName = isElectron 
@@ -335,68 +447,18 @@ export default function Home() {
           
           {/* 右侧结果展示区 */}
           <div className="w-full md:w-2/3 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <h2 className="text-xl font-bold text-text-dark mb-3">
-                {results.length > 0 ? `生成结果 (${currentCardIndex + 1}/${results.length})` : '预览效果'}
-              </h2>
-              <div className="flex-1 overflow-auto pb-16">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-64">
-                    <div className="text-redbook">正在生成中，请稍候...</div>
-                  </div>
-                ) : results.length > 0 ? (
-                  <>
-                    {isEditing ? (
-                      <div className="bg-white rounded-lg p-4 mb-6">
-                        <textarea
-                          className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
-                          value={editedContent}
-                          onChange={(e) => setEditedContent(e.target.value)}
-                          autoFocus
-                          style={{
-                            minHeight: '200px',
-                            height: 'auto',
-                            resize: 'vertical' // 允许用户垂直调整大小
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <ResultCard
-                        key={results[currentCardIndex].id}
-                        id={results[currentCardIndex].id}
-                        content={results[currentCardIndex].content}
-                        imageUrl={results[currentCardIndex].imageUrl}
-                        cardStyle={currentCardStyle}
-                        colorTheme={currentColorTheme}
-                        cardRatio={currentCardRatio}
-                        onDownload={handleDownload}
-                        onContentUpdate={handleContentUpdate}
-                      />
-                    )}
-                  </>
-                ) : showExample ? (
-                  // 显示默认示例
-                  <ResultCard
-                    key={exampleResult.id}
-                    id={exampleResult.id}
-                    content={exampleResult.content}
-                    imageUrl={exampleResult.imageUrl}
-                    cardStyle={currentCardStyle}
-                    colorTheme={currentColorTheme}
-                    cardRatio={currentCardRatio}
-                    onDownload={handleDownload}
-                    onContentUpdate={handleContentUpdate}
-                  />
-                ) : (
-                  <div className="flex justify-center items-center h-64 bg-light-gray rounded-lg">
-                    <div className="text-center">
-                      <p className="text-text-medium mb-2">请在左侧填写内容并点击生成按钮</p>
-                      <p className="text-text-medium text-sm">生成的小红书文案与图片将显示在这里</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* 使用标签页组件替换原来的结果展示区 */}
+            <TabPanel
+              tabs={tabs}
+              defaultTabId="result"
+              onTabChange={(tabId) => {
+                if (tabId === 'log') {
+                  logger.info('切换到日志面板');
+                } else {
+                  logger.info('切换到结果面板');
+                }
+              }}
+            />
             
             {/* 卡片导航按钮和下载按钮 - 使用sticky替代fixed */}
             {(results.length > 0 || showExample) && (
