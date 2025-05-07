@@ -1,0 +1,122 @@
+import React from 'react';
+
+interface StyleSelectorProps {
+  cardStyle: string;
+  colorTheme: string;
+  cardRatio: string;
+  onStyleChange: (style: string) => void;
+  onColorThemeChange: (theme: string) => void;
+  onCardRatioChange: (ratio: string) => void;
+}
+
+const StyleSelector: React.FC<StyleSelectorProps> = ({
+  cardStyle,
+  colorTheme,
+  cardRatio,
+  onStyleChange,
+  onColorThemeChange,
+  onCardRatioChange
+}) => {
+  return (
+    <div className="card">
+      <h3 className="text-lg font-medium mb-4 text-text-dark">调整卡片样式</h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block mb-2 text-text-dark text-sm">
+            卡片排布风格
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: 'standard', name: '标准布局' },
+              { id: 'left-image', name: '左图右文' },
+              { id: 'right-image', name: '右图左文' },
+              { id: 'overlay', name: '卡片叠加' },
+              { id: 'collage', name: '拼贴风格' },
+              { id: 'magazine', name: '杂志风格' },
+              { id: 'text-only', name: '无图纯文' }
+            ].map((style) => (
+              <button
+                key={style.id}
+                onClick={() => onStyleChange(style.id)}
+                className={`py-2 px-3 text-sm rounded-md transition-colors ${
+                  cardStyle === style.id
+                    ? 'bg-redbook text-white'
+                    : 'bg-gray-100 text-text-medium hover:bg-gray-200'
+                }`}
+              >
+                {style.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div>
+          <label className="block mb-2 text-text-dark text-sm">
+            配色风格
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: 'redbook', name: '小红书粉', color: '#ff2e51' },
+              { id: 'nature', name: '自然绿', color: '#4caf50' },
+              { id: 'ocean', name: '海洋蓝', color: '#2196f3' },
+              { id: 'sunset', name: '日落橙', color: '#ff9800' },
+              { id: 'elegant', name: '高级灰', color: '#9e9e9e' },
+              { id: 'dark', name: '暗黑模式', color: '#263238' },
+              { id: 'gradient', name: '柔和渐变', color: 'linear-gradient(135deg, #ff758c, #ff7eb3)' }
+            ].map((theme) => (
+              <div 
+                key={theme.id}
+                onClick={() => onColorThemeChange(theme.id)}
+                className={`flex items-center gap-2 py-2 px-3 rounded-md cursor-pointer transition-colors ${
+                  colorTheme === theme.id
+                    ? 'bg-gray-200'
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                <div 
+                  className="w-4 h-4 rounded-full" 
+                  style={{ 
+                    background: theme.color,
+                    border: colorTheme === theme.id ? '2px solid #333' : 'none'
+                  }}
+                ></div>
+                <span className="text-sm">{theme.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div>
+          <label className="block mb-2 text-text-dark text-sm">
+            卡片比例
+          </label>
+          <div className="flex gap-3">
+            {[
+              { id: '1:1', name: '正方形', width: 'w-10', height: 'h-10' },
+              { id: '4:5', name: '竖图', width: 'w-8', height: 'h-10' },
+              { id: '4:6', name: '长图', width: 'w-7', height: 'h-10' }
+            ].map((ratio) => (
+              <div 
+                key={ratio.id}
+                onClick={() => onCardRatioChange(ratio.id)}
+                className="flex flex-col items-center gap-1 cursor-pointer"
+              >
+                <div 
+                  className={`${ratio.width} ${ratio.height} border-2 rounded-md ${
+                    cardRatio === ratio.id
+                      ? 'border-redbook'
+                      : 'border-gray-300'
+                  }`}
+                ></div>
+                <span className="text-xs text-text-medium">{ratio.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StyleSelector; 
