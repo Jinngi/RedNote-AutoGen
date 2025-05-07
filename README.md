@@ -149,6 +149,19 @@ RedNote-AutoGen-AutoGen/
 
 邮箱 | Email: xdrshjr@gmail.com
 
+
+## 更新日志 | Changelog  
+
+2025-05-08：
+1 添加了基于FLUX的AI生图功能支持，对接 OneClickFluxGen-极简AI图像生成服务
+2 添加了运行日志可视化面板
+3 添加了桌面端一键打包脚本
+
+2025-05-08:  
+1. Adds support for AI image generation based on FLUX, integrated with OneClickFluxGen—an ultra-lightweight AI image generation service.  
+2. Adds a visual panel for runtime log monitoring.  
+3. Adds a one-click packaging script for the desktop version.
+
 ## 许可证 | License
 
 MIT

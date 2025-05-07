@@ -164,7 +164,7 @@ export default function Home() {
       // const prompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
       
       // 新版本：使用LLM将中文提示词转换为更适合Stable Diffusion的英文提示词
-      const chinesePrompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
+      const chinesePrompt = `${title}. 高质量风景图片，精美，清晰，色彩鲜艳，美女，写实`;
       logger.info(`中文原始提示词: ${chinesePrompt}`);
       
       // 调用LLM翻译提示词
