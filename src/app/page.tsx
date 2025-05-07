@@ -32,6 +32,15 @@ export default function Home() {
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   // 添加编辑内容状态
   const [editedContent, setEditedContent] = useState('');
+  // 添加默认示例状态
+  const [showExample, setShowExample] = useState(true);
+
+  // 默认示例内容
+  const exampleResult: GenerateResult = {
+    id: 'example-1',
+    content: `#一日份的小确幸\n\n今天在家做了一份超级好吃的肉桂苹果派🥧\n\n选用了新鲜采摘的红富士，撒上肉桂粉和红糖，外皮酥脆，内馅鲜甜多汁，一口下去幸福感爆棚～\n\n最喜欢这种简单的烘焙时光，在厨房里就能感受满满的治愈✨\n\n分享给和我一样喜欢烘焙的小伙伴们，周末在家也能享受甜蜜悠闲时光！\n\n#居家烘焙 #肉桂苹果派 #烘焙治愈系 #周末生活方式`,
+    imageUrl: 'https://picsum.photos/500/300?random=1'
+  };
 
   useEffect(() => {
     // 检测Electron环境
@@ -61,6 +70,7 @@ export default function Home() {
       setCurrentColorTheme(colorTheme);
       setCurrentCardRatio(cardRatio);
       setHasGeneratedContent(true);
+      setShowExample(false); // 隐藏示例
       // 重置当前卡片索引
       setCurrentCardIndex(0);
     } catch (error) {
@@ -180,152 +190,180 @@ export default function Home() {
 
   // 根据是否是Electron环境决定容器类名
   const containerClassName = isElectron 
-    ? "w-full px-2 py-4 flex-grow overflow-hidden" 
-    : "container mx-auto px-2 py-4 flex-grow overflow-hidden";
+    ? "w-full px-2 py-4 flex-1 overflow-hidden flex flex-col" 
+    : "container mx-auto px-2 py-4 flex-1 overflow-hidden flex flex-col";
 
   return (
     <div className="flex flex-col h-screen">
       <Header />
       
       <div className={containerClassName}>
-        <div className="flex flex-col md:flex-row gap-2 h-full">
+        <div className="flex flex-col md:flex-row gap-2 flex-1 overflow-hidden">
           {/* 左侧区域 */}
-          <div className="w-full md:w-1/3 space-y-4 md:h-full md:overflow-auto">
+          <div className="w-full md:w-1/3 flex flex-col space-y-4 md:overflow-auto">
             {/* 输入表单 */}
-            <InputForm 
-              onGenerate={handleGenerate} 
-              isLoading={isLoading} 
-            />
-            
-            {/* 样式选择器（仅当有结果时显示） */}
-            {showStyleSelector && (
-              <StyleSelector
-                cardStyle={currentCardStyle}
-                colorTheme={currentColorTheme}
-                cardRatio={currentCardRatio}
-                onStyleChange={handleStyleChange}
-                onColorThemeChange={handleColorThemeChange}
-                onCardRatioChange={handleCardRatioChange}
+            <div className="flex-1 overflow-auto">
+              <InputForm 
+                onGenerate={handleGenerate} 
+                isLoading={isLoading} 
               />
-            )}
+              
+              {/* 样式选择器（仅当有结果时显示） */}
+              {showStyleSelector && (
+                <div className="mt-4">
+                  <StyleSelector
+                    cardStyle={currentCardStyle}
+                    colorTheme={currentColorTheme}
+                    cardRatio={currentCardRatio}
+                    onStyleChange={handleStyleChange}
+                    onColorThemeChange={handleColorThemeChange}
+                    onCardRatioChange={handleCardRatioChange}
+                  />
+                </div>
+              )}
+            </div>
+            
+            {/* 固定在底部的生成按钮 */}
+            <div className="sticky bottom-0 pb-2 pt-2 bg-white z-10">
+              <button
+                onClick={() => {
+                  // 可以触发表单提交
+                  const submitButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+                  if (submitButton) submitButton.click();
+                }}
+                className="btn-primary w-full py-3 text-lg"
+                disabled={isLoading}
+              >
+                {isLoading ? '生成中...' : '生成文案与图片'}
+              </button>
+            </div>
           </div>
           
           {/* 右侧结果展示区 */}
-          <div className="w-full md:w-2/3 md:h-full flex flex-col">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="text-redbook">正在生成中，请稍候...</div>
-              </div>
-            ) : results.length > 0 ? (
-              <div className="flex flex-col h-full">
-                <div className="mb-3 flex-grow overflow-hidden flex flex-col">
-                  <h2 className="text-xl font-bold text-text-dark mb-3">
-                    生成结果 ({currentCardIndex + 1}/{results.length})
-                  </h2>
-                  <div className="flex-grow overflow-auto pb-16">
-                    {/* 只显示当前索引的卡片 */}
-                    {results.length > 0 && (
-                      <>
-                        {isEditing ? (
-                          <div className="bg-white rounded-lg p-4 mb-6">
-                            <textarea
-                              className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
-                              value={editedContent}
-                              onChange={(e) => setEditedContent(e.target.value)}
-                              autoFocus
-                              style={{
-                                minHeight: '200px',
-                                height: 'auto',
-                                resize: 'vertical' // 允许用户垂直调整大小
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <ResultCard
-                            key={results[currentCardIndex].id}
-                            id={results[currentCardIndex].id}
-                            content={results[currentCardIndex].content}
-                            imageUrl={results[currentCardIndex].imageUrl}
-                            cardStyle={currentCardStyle}
-                            colorTheme={currentColorTheme}
-                            cardRatio={currentCardRatio}
-                            onDownload={handleDownload}
-                            onContentUpdate={handleContentUpdate}
-                          />
-                        )}
-                      </>
-                    )}
+          <div className="w-full md:w-2/3 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <h2 className="text-xl font-bold text-text-dark mb-3">
+                {results.length > 0 ? `生成结果 (${currentCardIndex + 1}/${results.length})` : '预览效果'}
+              </h2>
+              <div className="flex-1 overflow-auto pb-16">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="text-redbook">正在生成中，请稍候...</div>
                   </div>
+                ) : results.length > 0 ? (
+                  <>
+                    {isEditing ? (
+                      <div className="bg-white rounded-lg p-4 mb-6">
+                        <textarea
+                          className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          autoFocus
+                          style={{
+                            minHeight: '200px',
+                            height: 'auto',
+                            resize: 'vertical' // 允许用户垂直调整大小
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <ResultCard
+                        key={results[currentCardIndex].id}
+                        id={results[currentCardIndex].id}
+                        content={results[currentCardIndex].content}
+                        imageUrl={results[currentCardIndex].imageUrl}
+                        cardStyle={currentCardStyle}
+                        colorTheme={currentColorTheme}
+                        cardRatio={currentCardRatio}
+                        onDownload={handleDownload}
+                        onContentUpdate={handleContentUpdate}
+                      />
+                    )}
+                  </>
+                ) : showExample ? (
+                  // 显示默认示例
+                  <ResultCard
+                    key={exampleResult.id}
+                    id={exampleResult.id}
+                    content={exampleResult.content}
+                    imageUrl={exampleResult.imageUrl}
+                    cardStyle={currentCardStyle}
+                    colorTheme={currentColorTheme}
+                    cardRatio={currentCardRatio}
+                    onDownload={handleDownload}
+                    onContentUpdate={handleContentUpdate}
+                  />
+                ) : (
+                  <div className="flex justify-center items-center h-64 bg-light-gray rounded-lg">
+                    <div className="text-center">
+                      <p className="text-text-medium mb-2">请在左侧填写内容并点击生成按钮</p>
+                      <p className="text-text-medium text-sm">生成的小红书文案与图片将显示在这里</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* 卡片导航按钮和下载按钮 - 使用sticky替代fixed */}
+            {(results.length > 0 || showExample) && (
+              <div className="sticky bottom-0 w-full bg-white p-3 border-t border-gray-200 flex justify-between items-center z-10">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrevCard}
+                    disabled={(currentCardIndex === 0 && !showExample) || isEditing || showExample}
+                    className={`btn-secondary ${((currentCardIndex === 0 && !showExample) || isEditing || showExample) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    上一个
+                  </button>
+                  <button
+                    onClick={handleNextCard}
+                    disabled={(currentCardIndex === results.length - 1 && !showExample) || isEditing || showExample}
+                    className={`btn-secondary ${((currentCardIndex === results.length - 1 && !showExample) || isEditing || showExample) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    下一个
+                  </button>
                 </div>
                 
-                {/* 卡片导航按钮和下载按钮 */}
-                <div className="mt-auto">
-                  {results.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white p-3 border-t border-gray-200 flex justify-between items-center">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handlePrevCard}
-                          disabled={currentCardIndex === 0 || isEditing}
-                          className={`btn-secondary ${(currentCardIndex === 0 || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          上一个
-                        </button>
-                        <button
-                          onClick={handleNextCard}
-                          disabled={currentCardIndex === results.length - 1 || isEditing}
-                          className={`btn-secondary ${(currentCardIndex === results.length - 1 || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          下一个
-                        </button>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        {isEditing ? (
-                          <>
-                            <button
-                              onClick={saveEditing}
-                              className="btn-primary mr-2"
-                            >
-                              保存
-                            </button>
-                            <button
-                              onClick={cancelEditing}
-                              className="btn-secondary"
-                            >
-                              取消
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={startEditing}
-                            className="btn-secondary"
-                          >
-                            编辑文本
-                          </button>
-                        )}
-                        <button
-                          onClick={handleDownloadImage}
-                          className="btn-secondary"
-                        >
-                          下载图片
-                        </button>
-                        <button
-                          onClick={handleDownloadFullCard}
-                          disabled={isGeneratingCard || isEditing}
-                          className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
-                        >
-                          {isGeneratingCard ? '生成中...' : '下载完整卡片'}
-                        </button>
-                      </div>
-                    </div>
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={saveEditing}
+                        className="btn-primary mr-2"
+                      >
+                        保存
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="btn-secondary"
+                      >
+                        取消
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={startEditing}
+                        disabled={showExample}
+                        className={`btn-secondary ${showExample ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        编辑文本
+                      </button>
+                      <button
+                        onClick={handleDownloadImage}
+                        className="btn-secondary"
+                      >
+                        下载图片
+                      </button>
+                      <button
+                        onClick={handleDownloadFullCard}
+                        disabled={isGeneratingCard || isEditing || showExample}
+                        className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      >
+                        {isGeneratingCard ? '生成中...' : '下载完整卡片'}
+                      </button>
+                    </>
                   )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center items-center h-64 bg-light-gray rounded-lg">
-                <div className="text-center">
-                  <p className="text-text-medium mb-2">请在左侧填写内容并点击生成按钮</p>
-                  <p className="text-text-medium text-sm">生成的小红书文案与图片将显示在这里</p>
                 </div>
               </div>
             )}

@@ -148,10 +148,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
         
         <button
           type="submit"
-          className="btn-primary w-full py-3 text-lg"
-          disabled={isLoading}
+          className="hidden"
         >
-          {isLoading ? '生成中...' : '生成文案与图片'}
+          提交
         </button>
       </form>
     </div>

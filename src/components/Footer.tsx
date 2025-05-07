@@ -27,7 +27,7 @@ const Footer: React.FC = () => {
     : "container mx-auto";
 
   return (
-    <footer className="bg-light-gray py-3 md:py-4">
+    <footer className="bg-light-gray py-3 md:py-4 mt-auto">
       <div className={containerClassName}>
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-2 md:mb-0">
