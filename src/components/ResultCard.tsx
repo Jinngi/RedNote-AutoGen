@@ -45,16 +45,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 获取卡片比例样式
   const getRatioStyle = () => {
-    switch (cardRatio) {
-      case '1:1':
-        return { aspectRatio: '1/1' };
-      case '4:5':
-        return { aspectRatio: '4/5' };
-      case '4:6':
-        return { aspectRatio: '4/6' };
-      default:
-        return { aspectRatio: '4/5' };
-    }
+    // 在单卡片模式下，我们自适应容器高度
+    return { height: '100%', maxHeight: 'calc(100vh - 250px)' };
   };
 
   // 获取主题颜色
@@ -198,9 +190,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
     // 内容编辑模式
     if (isEditing) {
       return (
-        <div className="p-4 bg-white rounded-lg">
+        <div className="p-4 bg-white rounded-lg h-full overflow-auto">
           <textarea
-            className="w-full p-2 border border-gray-300 rounded-lg min-h-[200px] text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
+            className="w-full p-2 border border-gray-300 rounded-lg min-h-[200px] max-h-[calc(100vh-300px)] text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
             autoFocus
@@ -546,10 +538,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
   };
 
   return (
-    <div className="card mb-6">
+    <div className="card mb-6 h-full flex flex-col">
       <div 
         ref={cardRef} 
-        className="overflow-hidden"
+        className="overflow-hidden flex-grow bg-white rounded-lg"
         style={getRatioStyle()}
       >
         {renderCardContent()}
