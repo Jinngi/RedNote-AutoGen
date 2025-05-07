@@ -1,0 +1,36 @@
+{
+  "appId": "com.rednote.autogen",
+  "productName": "RedNote AutoGen",
+  "asar": true,
+  "directories": {
+    "output": "dist",
+    "buildResources": "resources"
+  },
+  "files": [
+    "out/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "icon": "resources/icon.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "resources/icon.ico",
+    "uninstallerIcon": "resources/icon.ico",
+    "installerHeaderIcon": "resources/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "RedNote AutoGen"
+  },
+  "buildDependenciesFromSource": true,
+  "npmRebuild": true
+} 

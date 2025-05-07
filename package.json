@@ -13,9 +13,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "electron": "electron .",
+    "electron-dev": "set NODE_ENV=development && electron .",
+    "electron-prod": "npm run build && electron .",
     "pack": "npm run build && electron-builder --win",
-    "make-exe": "npm run build && electron-builder --win --x64 --publish never"
+    "make-exe": "npm run build && electron-builder --win --x64 --publish never",
+    "make-portable": "npm run build && electron-builder --win portable --x64 --publish never",
+    "desktop-app": "npm run build && electron-builder --win --x64 --config electron-builder.json"
   },
   "dependencies": {
     "autoprefixer": "^10.4.21",
@@ -43,5 +46,10 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.28",
     "typescript": "^5.8.3"
+  },
+  "build": {
+    "appId": "com.rednote.autogen",
+    "productName": "RedNote AutoGen",
+    "extends": "./electron-builder.json"
   }
 }
