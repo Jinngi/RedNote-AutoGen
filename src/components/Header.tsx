@@ -65,7 +65,11 @@ const Header: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="text-sm md:text-base text-text-medium hover:text-redbook">
+              <Link 
+                href="/contact" 
+                className="text-sm md:text-base text-text-medium hover:text-redbook"
+                style={{ marginRight: isElectron ? '70px' : 0 }}
+              >
                 联系我们
               </Link>
             </li>

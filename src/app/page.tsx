@@ -27,6 +27,11 @@ export default function Home() {
   // 添加当前显示的卡片索引状态
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isElectron, setIsElectron] = useState(false);
+  // 添加状态来管理编辑模式和生成卡片状态
+  const [isEditing, setIsEditing] = useState(false);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  // 添加编辑内容状态
+  const [editedContent, setEditedContent] = useState('');
 
   useEffect(() => {
     // 检测Electron环境
@@ -106,6 +111,73 @@ export default function Home() {
     }
   };
 
+  // 更新编辑功能
+  const startEditing = () => {
+    if (results.length > 0) {
+      const currentResult = results[currentCardIndex];
+      setEditedContent(currentResult.content);
+      setIsEditing(true);
+    }
+  };
+
+  const saveEditing = () => {
+    if (results.length > 0) {
+      const currentResult = results[currentCardIndex];
+      handleContentUpdate(currentResult.id, editedContent);
+      setIsEditing(false);
+    }
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  // 添加下载功能
+  const handleDownloadImage = async () => {
+    if (results.length > 0) {
+      const currentResult = results[currentCardIndex];
+      // 这里可能需要调用ResultCard中的下载方法
+      handleDownload(currentResult.id);
+    }
+  };
+
+  const handleDownloadFullCard = async () => {
+    setIsGeneratingCard(true);
+    try {
+      if (results.length > 0) {
+        const currentResult = results[currentCardIndex];
+        // 调用后端API生成完整卡片
+        const response = await fetch('/api/generate-card', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: currentResult.id,
+            content: currentResult.content,
+            imageUrl: currentResult.imageUrl,
+            cardStyle: currentCardStyle,
+            colorTheme: currentColorTheme,
+            cardRatio: currentCardRatio
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('生成卡片失败');
+        }
+
+        const blob = await response.blob();
+        const saveAs = (await import('file-saver')).saveAs;
+        saveAs(blob, `rednote-card-${currentResult.id}.png`);
+        handleDownload(currentResult.id);
+      }
+    } catch (error) {
+      console.error('下载完整卡片时出错:', error);
+    } finally {
+      setIsGeneratingCard(false);
+    }
+  };
+
   // 根据是否是Electron环境决定容器类名
   const containerClassName = isElectron 
     ? "w-full px-2 py-4 flex-grow overflow-hidden" 
@@ -150,54 +222,103 @@ export default function Home() {
                   <h2 className="text-xl font-bold text-text-dark mb-3">
                     生成结果 ({currentCardIndex + 1}/{results.length})
                   </h2>
-                  <div className="flex-grow overflow-auto">
+                  <div className="flex-grow overflow-auto pb-16">
                     {/* 只显示当前索引的卡片 */}
                     {results.length > 0 && (
-                      <ResultCard
-                        key={results[currentCardIndex].id}
-                        id={results[currentCardIndex].id}
-                        content={results[currentCardIndex].content}
-                        imageUrl={results[currentCardIndex].imageUrl}
-                        cardStyle={currentCardStyle}
-                        colorTheme={currentColorTheme}
-                        cardRatio={currentCardRatio}
-                        onDownload={handleDownload}
-                        onContentUpdate={handleContentUpdate}
-                      />
+                      <>
+                        {isEditing ? (
+                          <div className="bg-white rounded-lg p-4 mb-6">
+                            <textarea
+                              className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
+                              value={editedContent}
+                              onChange={(e) => setEditedContent(e.target.value)}
+                              autoFocus
+                              style={{
+                                minHeight: '200px',
+                                height: 'auto',
+                                resize: 'vertical' // 允许用户垂直调整大小
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <ResultCard
+                            key={results[currentCardIndex].id}
+                            id={results[currentCardIndex].id}
+                            content={results[currentCardIndex].content}
+                            imageUrl={results[currentCardIndex].imageUrl}
+                            cardStyle={currentCardStyle}
+                            colorTheme={currentColorTheme}
+                            cardRatio={currentCardRatio}
+                            onDownload={handleDownload}
+                            onContentUpdate={handleContentUpdate}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
                 
                 {/* 卡片导航按钮和下载按钮 */}
                 <div className="mt-auto">
-                  {results.length > 1 && (
-                    <div className="flex justify-between mb-3">
-                      <button
-                        onClick={handlePrevCard}
-                        disabled={currentCardIndex === 0}
-                        className={`btn-secondary ${currentCardIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        上一个
-                      </button>
-                      <button
-                        onClick={handleNextCard}
-                        disabled={currentCardIndex === results.length - 1}
-                        className={`btn-secondary ${currentCardIndex === results.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        下一个
-                      </button>
+                  {results.length > 0 && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-white p-3 border-t border-gray-200 flex justify-between items-center">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handlePrevCard}
+                          disabled={currentCardIndex === 0 || isEditing}
+                          className={`btn-secondary ${(currentCardIndex === 0 || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          上一个
+                        </button>
+                        <button
+                          onClick={handleNextCard}
+                          disabled={currentCardIndex === results.length - 1 || isEditing}
+                          className={`btn-secondary ${(currentCardIndex === results.length - 1 || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          下一个
+                        </button>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        {isEditing ? (
+                          <>
+                            <button
+                              onClick={saveEditing}
+                              className="btn-primary mr-2"
+                            >
+                              保存
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="btn-secondary"
+                            >
+                              取消
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={startEditing}
+                            className="btn-secondary"
+                          >
+                            编辑文本
+                          </button>
+                        )}
+                        <button
+                          onClick={handleDownloadImage}
+                          className="btn-secondary"
+                        >
+                          下载图片
+                        </button>
+                        <button
+                          onClick={handleDownloadFullCard}
+                          disabled={isGeneratingCard || isEditing}
+                          className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                          {isGeneratingCard ? '生成中...' : '下载完整卡片'}
+                        </button>
+                      </div>
                     </div>
                   )}
-                  
-                  <div className="sticky bottom-0">
-                    <DownloadAllButton
-                      results={results}
-                      isDisabled={isLoading}
-                      cardStyle={currentCardStyle}
-                      colorTheme={currentColorTheme}
-                      cardRatio={currentCardRatio}
-                    />
-                  </div>
                 </div>
               </div>
             ) : (

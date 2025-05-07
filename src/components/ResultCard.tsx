@@ -45,8 +45,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 获取卡片比例样式
   const getRatioStyle = () => {
-    // 在单卡片模式下，我们自适应容器高度
-    return { height: '100%', maxHeight: 'calc(100vh - 250px)' };
+    // 修改为自适应文字内容高度，不设置最大高度限制
+    return { 
+      minHeight: '100px',
+      height: 'auto',
+      maxHeight: 'none', // 移除最大高度限制
+      overflow: 'visible' // 改为visible，确保内容不会被裁剪
+    };
   };
 
   // 获取主题颜色
@@ -190,12 +195,17 @@ const ResultCard: React.FC<ResultCardProps> = ({
     // 内容编辑模式
     if (isEditing) {
       return (
-        <div className="p-4 bg-white rounded-lg h-full overflow-auto">
+        <div className="p-4 bg-white rounded-lg h-full overflow-visible">
           <textarea
-            className="w-full p-2 border border-gray-300 rounded-lg min-h-[200px] max-h-[calc(100vh-300px)] text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
+            className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
             autoFocus
+            style={{
+              minHeight: '200px',
+              height: 'auto',
+              resize: 'vertical' // 允许用户垂直调整大小
+            }}
           />
         </div>
       );
@@ -206,24 +216,24 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'left-image':
         return (
           <div 
-            className="flex flex-col md:flex-row overflow-hidden rounded-lg h-full" 
+            className="flex flex-col md:flex-row overflow-visible rounded-lg h-auto" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%' 
+              height: 'auto',
+              minHeight: '200px'
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ minHeight: '150px' }}>
+              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ minHeight: '150px' }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-full object-cover"
-                  style={{ maxHeight: '100%' }}
+                  className="w-full h-auto object-contain"
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto`} style={{ minHeight: '200px' }}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-visible`} style={{ minHeight: '150px' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -247,24 +257,24 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'right-image':
         return (
           <div 
-            className="flex flex-col md:flex-row-reverse overflow-hidden rounded-lg h-full" 
+            className="flex flex-col md:flex-row-reverse overflow-visible rounded-lg h-auto" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%'
+              height: 'auto',
+              minHeight: '200px'
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ minHeight: '150px' }}>
+              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ minHeight: '150px' }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-full object-cover"
-                  style={{ maxHeight: '100%' }}
+                  className="w-full h-auto object-contain"
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto`} style={{ minHeight: '200px' }}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-visible`} style={{ minHeight: '150px' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -288,19 +298,18 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'overlay':
         return (
           <div 
-            className="relative overflow-hidden rounded-lg h-full" 
+            className="relative overflow-visible rounded-lg h-auto" 
             style={{ 
-              ...getRatioStyle(),
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              height: '100%'
+              height: 'auto',
+              minHeight: '200px'
             }}
           >
             {!isTextOnly && (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="w-full h-full object-cover"
-                style={{ maxHeight: '100%' }}
+                className="w-full h-auto object-contain"
               />
             )}
             <div 
@@ -309,11 +318,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 background: isTextOnly 
                   ? (colorTheme === 'gradient' ? colors.background : colors.secondary)
                   : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
-                zIndex: 10  // 确保文字在图片上层
+                zIndex: 10,
+                overflow: 'visible',
+                height: '100%'
               }}
             >
               <div className="flex-grow"></div>
-              <div style={{ minHeight: '150px' }}>
+              <div>
                 <h3 
                   className="text-xl font-bold mb-4" 
                   style={{ 
@@ -328,8 +339,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   style={{ 
                     color: isTextOnly ? colors.text : '#fff',
                     textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
-                    maxHeight: '150px',
-                    overflow: 'auto'
                   }}
                 >
                   {body}
@@ -357,12 +366,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'collage':
         return (
           <div 
-            className="grid grid-cols-2 gap-3 p-4 rounded-lg h-full" 
+            className="grid grid-cols-2 gap-3 p-4 rounded-lg h-auto" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%',
-              gridTemplateRows: 'auto 1fr auto'
+              height: 'auto',
+              gridTemplateRows: 'auto auto auto'
             }}
           >
             <div className="col-span-2">
@@ -370,11 +379,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </div>
             
             {!isTextOnly && (
-              <div className="overflow-hidden rounded-lg h-full">
+              <div className="overflow-visible rounded-lg h-auto">
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto object-contain"
                 />
               </div>
             )}
@@ -416,11 +425,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'magazine':
         return (
           <div 
-            className="overflow-hidden rounded-lg h-full flex flex-col" 
+            className="overflow-visible rounded-lg h-auto flex flex-col" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%'
+              height: 'auto'
             }}
           >
             <div className="p-6 relative flex-grow flex flex-col">
@@ -432,13 +441,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 {!isTextOnly && (
                   <div className="md:w-1/3">
                     <div 
-                      className="overflow-hidden rounded-lg shadow-md" 
+                      className="overflow-visible rounded-lg shadow-md" 
                       style={{ borderColor: colors.primary, borderWidth: '1px' }}
                     >
                       <img 
                         src={imageUrl} 
                         alt={title} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-auto object-contain"
                       />
                     </div>
                   </div>
@@ -477,14 +486,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'text-only':
         return (
           <div 
-            className="p-6 rounded-lg h-full flex flex-col" 
+            className="p-6 rounded-lg h-auto flex flex-col" 
             style={{ 
               background: colorTheme === 'gradient' 
                 ? colors.background 
                 : (colorTheme === 'dark' ? colors.background : '#fff'),
               color: colors.text,
-              ...getRatioStyle(),
-              height: '100%'
+              height: 'auto'
             }}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: colors.primary }}>{title}</h3>
@@ -511,11 +519,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
       default:
         return (
           <div 
-            className="overflow-hidden rounded-lg h-full flex flex-col" 
+            className="overflow-visible rounded-lg h-auto flex flex-col" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%'
+              height: 'auto'
             }}
           >
             {!isTextOnly && (
@@ -523,7 +531,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full object-cover"
+                  className="w-full h-auto object-contain"
                 />
               </div>
             )}
@@ -569,55 +577,18 @@ const ResultCard: React.FC<ResultCardProps> = ({
   }, [imageUrl, cardStyle, colorTheme]);
 
   return (
-    <div className="card mb-6 h-full flex flex-col">
+    <div className="card mb-6 h-auto flex flex-col">
       <div 
         ref={cardRef} 
-        className="overflow-hidden flex-grow bg-white rounded-lg"
-        style={getRatioStyle()}
+        className="bg-white rounded-lg"
+        style={{ 
+          minHeight: '200px',
+          height: 'auto',
+          maxHeight: 'none', // 移除最大高度限制
+          overflow: 'visible' // 确保内容不会被裁剪
+        }}
       >
         {renderCardContent()}
-      </div>
-      <div className="mt-4 flex justify-between gap-3">
-        <div>
-          {isEditing ? (
-            <>
-              <button
-                onClick={saveEditing}
-                className="btn-primary mr-2"
-              >
-                保存
-              </button>
-              <button
-                onClick={cancelEditing}
-                className="btn-secondary"
-              >
-                取消
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={startEditing}
-              className="btn-secondary"
-            >
-              编辑文本
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleDownload}
-            className="btn-secondary"
-          >
-            下载图片
-          </button>
-          <button
-            onClick={handleDownloadFullCard}
-            disabled={isGeneratingCard || isEditing}
-            className={`btn-primary ${(isGeneratingCard || isEditing) ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {isGeneratingCard ? '生成中...' : '下载完整卡片'}
-          </button>
-        </div>
       </div>
     </div>
   );
