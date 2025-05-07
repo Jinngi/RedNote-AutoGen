@@ -146,8 +146,63 @@ export default function Home() {
   const handleDownloadImage = async () => {
     if (results.length > 0) {
       const currentResult = results[currentCardIndex];
-      // 这里可能需要调用ResultCard中的下载方法
-      handleDownload(currentResult.id);
+      try {
+        // 获取当前卡片元素
+        const cardElement = document.querySelector(`[data-card-id="${currentResult.id}"]`);
+        if (cardElement) {
+          console.log('找到卡片元素，准备下载图片...');
+          const { toPng } = await import('html-to-image');
+          
+          // 克隆节点并处理跨域图片
+          const clonedNode = cardElement.cloneNode(true) as HTMLElement;
+          const images = clonedNode.querySelectorAll('img');
+          
+          // 处理所有跨域图片，隐藏它们以避免CORS错误
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i] as HTMLImageElement;
+            if (img.src.includes('picsum.photos') || img.src.includes('http')) {
+              img.style.visibility = 'hidden';
+            }
+          }
+            
+          // 添加延时确保元素完全渲染
+          setTimeout(async () => {
+            try {
+              const dataUrl = await toPng(cardElement as HTMLElement, { 
+                quality: 0.95,
+                canvasWidth: 1200,
+                canvasHeight: 1500,
+                pixelRatio: 2,
+                cacheBust: true,
+                // 过滤跨域资源
+                filter: (node) => {
+                  if (node instanceof HTMLImageElement && 
+                      (node.src.includes('picsum.photos') || node.src.includes('http'))) {
+                    return false;
+                  }
+                  return true;
+                }
+              });
+              console.log('HTML转换成功，准备保存图片...');
+              // 使用a标签下载，确保兼容性
+              const link = document.createElement('a');
+              link.download = `rednote-${currentResult.id}.png`;
+              link.href = dataUrl;
+              link.click();
+              handleDownload(currentResult.id);
+            } catch (innerError) {
+              console.error('延时后下载图片仍然出错:', innerError);
+              alert('下载图片失败，请检查控制台获取详细错误信息');
+            }
+          }, 500);
+        } else {
+          console.error('找不到卡片元素');
+          alert('找不到卡片元素，无法下载图片');
+        }
+      } catch (error) {
+        console.error('下载图片时出错:', error);
+        alert('下载图片失败，请检查控制台获取详细错误信息');
+      }
     }
   };
 
@@ -156,33 +211,60 @@ export default function Home() {
     try {
       if (results.length > 0) {
         const currentResult = results[currentCardIndex];
-        // 调用后端API生成完整卡片
-        const response = await fetch('/api/generate-card', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: currentResult.id,
-            content: currentResult.content,
-            imageUrl: currentResult.imageUrl,
-            cardStyle: currentCardStyle,
-            colorTheme: currentColorTheme,
-            cardRatio: currentCardRatio
-          }),
-        });
+        console.log('开始生成完整卡片...');
+        
+        // 添加随机时间戳避免缓存
+        const timestamp = new Date().getTime();
+        
+        try {
+          // 调用后端API生成完整卡片
+          const response = await fetch(`/api/generate-card?t=${timestamp}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: currentResult.id,
+              content: currentResult.content,
+              imageUrl: currentResult.imageUrl,
+              cardStyle: currentCardStyle,
+              colorTheme: currentColorTheme,
+              cardRatio: currentCardRatio
+            }),
+          });
 
-        if (!response.ok) {
-          throw new Error('生成卡片失败');
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API响应错误:', response.status, errorText);
+            throw new Error(`生成卡片失败: ${response.status} ${errorText}`);
+          }
+
+          console.log('API响应成功，准备下载卡片...');
+          const blob = await response.blob();
+          
+          // 使用a标签下载，确保兼容性
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `rednote-card-${currentResult.id}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          
+          handleDownload(currentResult.id);
+          console.log('卡片下载完成');
+        } catch (apiError) {
+          console.error('API调用失败，尝试使用前端渲染:', apiError);
+          alert('通过API生成卡片失败，正在尝试使用前端方式下载...');
+          
+          // 降级方案：如果API失败，使用前端方法
+          handleDownloadImage();
         }
-
-        const blob = await response.blob();
-        const saveAs = (await import('file-saver')).saveAs;
-        saveAs(blob, `rednote-card-${currentResult.id}.png`);
-        handleDownload(currentResult.id);
       }
     } catch (error) {
       console.error('下载完整卡片时出错:', error);
+      alert('下载卡片失败，请检查控制台获取详细错误信息');
     } finally {
       setIsGeneratingCard(false);
     }

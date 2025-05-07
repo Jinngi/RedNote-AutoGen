@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as puppeteer from 'puppeteer';
 
+// 添加CORS头
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// 添加OPTIONS方法处理CORS预检请求
+export async function OPTIONS() {
+  return new NextResponse(null, { 
+    status: 200, 
+    headers: corsHeaders
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { id, content, imageUrl, cardStyle, colorTheme, cardRatio } = await req.json();
@@ -8,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (!id || !content) {
       return NextResponse.json(
         { error: '缺少必要参数' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -16,11 +31,12 @@ export async function POST(req: NextRequest) {
     const cardHtml = await generateCardHtml(content, imageUrl, cardStyle, colorTheme, cardRatio);
     
     // 使用 Puppeteer 将 HTML 转换为图片
-    const imageBuffer = await convertHtmlToImage(cardHtml, cardRatio);
+    const imageBuffer = await convertHtmlToImage(cardHtml, cardRatio, imageUrl);
 
-    // 返回图片数据
+    // 返回图片数据，添加CORS头
     return new NextResponse(imageBuffer, {
       headers: {
+        ...corsHeaders,
         'Content-Type': 'image/png',
         'Content-Disposition': `attachment; filename="rednote-card-${id}.png"`,
       },
@@ -28,8 +44,8 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('生成卡片时出错:', error);
     return NextResponse.json(
-      { error: '生成卡片时出错' },
-      { status: 500 }
+      { error: '生成卡片时出错', details: error instanceof Error ? error.message : String(error) },
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -155,15 +171,45 @@ async function generateCardHtml(
 /**
  * 将 HTML 转换为图片
  */
-async function convertHtmlToImage(html: string, cardRatio: string = '4:5'): Promise<Buffer> {
+async function convertHtmlToImage(html: string, cardRatio: string = '4:5', imageUrl?: string): Promise<Buffer> {
   // 启动浏览器
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox', 
+      '--disable-setuid-sandbox',
+      '--disable-web-security', // 禁用Web安全策略以绕过CORS限制
+      '--allow-file-access-from-files' // 允许从文件访问文件
+    ]
   });
   
   try {
     const page = await browser.newPage();
+    
+    // 忽略页面错误
+    page.on('error', err => {
+      console.error('页面错误:', err);
+    });
+    
+    // 拦截请求，处理跨域图片问题
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      if (req.resourceType() === 'image' && (
+          req.url().includes('picsum.photos') || 
+          (imageUrl && req.url() === imageUrl)
+        )) {
+        // 对于外部图片，我们可以尝试绕过CORS
+        req.continue({
+          headers: {
+            ...req.headers(),
+            'Origin': 'https://picsum.photos',
+            'Referer': 'https://picsum.photos/'
+          }
+        });
+      } else {
+        req.continue();
+      }
+    });
     
     // 设置页面内容
     await page.setContent(html, { waitUntil: 'networkidle0' });
