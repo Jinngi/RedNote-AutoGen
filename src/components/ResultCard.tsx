@@ -51,32 +51,32 @@ const ResultCard: React.FC<ResultCardProps> = ({
         return { 
           aspectRatio: '1/1',
           width: '100%',
-          height: 'auto',
+          height: '100%', // 确保高度填满容器
           maxHeight: 'none',
-          overflow: 'visible'
+          overflow: 'hidden' // 防止内容溢出
         };
       case '4:5':  // 竖图
         return { 
           aspectRatio: '4/5',
           width: '100%',
-          height: 'auto',
+          height: '100%', // 确保高度填满容器
           maxHeight: 'none',
-          overflow: 'visible'
+          overflow: 'hidden' // 防止内容溢出
         };
       case '4:6':  // 长图
         return { 
           aspectRatio: '2/3', // 4:6 简化为 2:3
           width: '100%',
-          height: 'auto',
+          height: '100%', // 确保高度填满容器
           maxHeight: 'none',
-          overflow: 'visible'
+          overflow: 'hidden' // 防止内容溢出
         };
       default:
         return { 
           minHeight: '100px',
-          height: 'auto',
+          height: '100%', // 确保高度填满容器
           maxHeight: 'none',
-          overflow: 'visible'
+          overflow: 'hidden' // 防止内容溢出
         };
     }
   };
@@ -282,18 +282,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
     switch (cardStyle) {
       case 'left-image':
         return (
-          <div 
-            className="flex flex-col md:flex-row overflow-visible rounded-lg h-auto" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              color: colors.text,
-              height: 'auto',
-              minHeight: '200px'
-            }}
-          >
+          <div className="flex flex-col md:flex-row overflow-hidden rounded-lg h-full" style={{ 
+            backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
+            color: colors.text,
+            height: '100%',
+            minHeight: '200px'
+          }}>
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ 
+              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ 
                 minHeight: '150px',
+                height: '100%',
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
                 <img 
@@ -303,7 +301,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-visible`} style={{ minHeight: '150px' }}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -327,17 +325,18 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'right-image':
         return (
           <div 
-            className="flex flex-col md:flex-row-reverse overflow-visible rounded-lg h-auto" 
+            className="flex flex-col md:flex-row-reverse overflow-hidden rounded-lg h-full" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: 'auto',
+              height: '100%',
               minHeight: '200px'
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ 
+              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ 
                 minHeight: '150px',
+                height: '100%',
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
                 <img 
@@ -347,7 +346,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-visible`} style={{ minHeight: '150px' }}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -371,10 +370,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'overlay':
         return (
           <div 
-            className="relative overflow-visible rounded-lg h-auto" 
+            className="relative overflow-hidden rounded-lg h-full" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              height: 'auto',
+              height: '100%',
               minHeight: '200px',
               aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
             }}
@@ -387,13 +386,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
               />
             )}
             <div 
-              className="absolute inset-0 p-6 flex flex-col justify-between" 
+              className="absolute inset-0 p-6 flex flex-col justify-between overflow-auto" 
               style={{ 
                 background: isTextOnly 
                   ? (colorTheme === 'gradient' ? colors.background : colors.secondary)
                   : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
                 zIndex: 10,
-                overflow: 'visible',
                 height: '100%'
               }}
             >
@@ -440,12 +438,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'collage':
         return (
           <div 
-            className="grid grid-cols-2 gap-3 p-4 rounded-lg h-auto" 
+            className="grid grid-cols-2 gap-3 p-4 rounded-lg h-full" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: 'auto',
-              gridTemplateRows: 'auto auto auto'
+              height: '100%',
+              gridTemplateRows: 'auto 1fr auto'
             }}
           >
             <div className="col-span-2">
@@ -453,7 +451,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </div>
             
             {!isTextOnly && (
-              <div className="overflow-visible rounded-lg h-auto" style={{ 
+              <div className="overflow-hidden rounded-lg h-full" style={{ 
                 aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
               }}>
                 <img 
@@ -464,7 +462,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </div>
             )}
             
-            <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem' }}>
+            <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col overflow-auto h-full`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem' }}>
               <p className="whitespace-pre-line text-sm mb-4 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-1">
                 {tags.slice(0, 3).map((tag, index) => (
@@ -501,23 +499,23 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'magazine':
         return (
           <div 
-            className="overflow-visible rounded-lg h-auto flex flex-col" 
+            className="overflow-hidden rounded-lg h-full flex flex-col" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: 'auto'
+              height: '100%'
             }}
           >
-            <div className="p-6 relative flex-grow flex flex-col">
+            <div className="p-6 relative flex-grow flex flex-col h-full">
               <div className="border-b pb-3 mb-6" style={{ borderColor: colors.primary }}>
                 <h3 className="text-2xl font-bold" style={{ color: colors.primary }}>{title}</h3>
               </div>
               
-              <div className="flex flex-col md:flex-row gap-6 flex-grow">
+              <div className="flex flex-col md:flex-row gap-6 flex-grow overflow-auto">
                 {!isTextOnly && (
-                  <div className="md:w-1/3">
+                  <div className="md:w-1/3 h-full">
                     <div 
-                      className="overflow-visible rounded-lg shadow-md" 
+                      className="overflow-hidden rounded-lg shadow-md h-full" 
                       style={{ 
                         borderColor: colors.primary, 
                         borderWidth: '1px',
@@ -533,7 +531,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   </div>
                 )}
                 
-                <div className={`${isTextOnly ? 'w-full' : 'md:w-2/3'} flex flex-col flex-grow`}>
+                <div className={`${isTextOnly ? 'w-full' : 'md:w-2/3'} flex flex-col flex-grow overflow-auto`}>
                   <p 
                     className="whitespace-pre-line mb-6 first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2 flex-grow"
                     style={{ 
@@ -566,13 +564,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
       case 'text-only':
         return (
           <div 
-            className="p-6 rounded-lg h-auto flex flex-col" 
+            className="p-6 rounded-lg h-full flex flex-col overflow-auto" 
             style={{ 
               background: colorTheme === 'gradient' 
                 ? colors.background 
                 : (colorTheme === 'dark' ? colors.background : '#fff'),
               color: colors.text,
-              height: 'auto'
+              height: '100%'
             }}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: colors.primary }}>{title}</h3>
@@ -599,11 +597,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
       default:
         return (
           <div 
-            className="overflow-visible rounded-lg h-auto flex flex-col" 
+            className="overflow-hidden rounded-lg h-full flex flex-col" 
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: 'auto'
+              height: '100%'
             }}
           >
             {!isTextOnly && (
@@ -615,7 +613,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 />
               </div>
             )}
-            <div className="p-6 flex-grow">
+            <div className="p-6 flex-grow overflow-auto">
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -657,10 +655,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
   }, [imageUrl, cardStyle, colorTheme]);
 
   return (
-    <div className="mb-6 h-auto flex flex-col" data-card-id={id}>
+    <div className="mb-6 h-full flex flex-col" data-card-id={id}>
       <div 
         ref={cardRef} 
-        className="bg-white rounded-lg border border-gray-200 shadow-md"
+        className="bg-white rounded-lg border border-gray-200 shadow-md h-full"
         style={{ 
           ...getRatioStyle(), // 应用比例样式
           minHeight: '200px'
