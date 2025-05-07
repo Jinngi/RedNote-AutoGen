@@ -1,11 +1,34 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaWeibo, FaWeixin, FaGithub } from 'react-icons/fa';
 
+interface ElectronWindow extends Window {
+  electron?: {
+    minimizeWindow: () => void;
+    closeWindow: () => void;
+  };
+}
+
 const Footer: React.FC = () => {
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    // 检查是否在 Electron 环境中运行
+    if (typeof window !== 'undefined' && (window as ElectronWindow).electron) {
+      setIsElectron(true);
+    }
+  }, []);
+
+  // 根据是否为Electron环境选择容器类名
+  const containerClassName = isElectron
+    ? "w-full px-4"
+    : "container mx-auto";
+
   return (
     <footer className="bg-light-gray py-3 md:py-4">
-      <div className="container mx-auto">
+      <div className={containerClassName}>
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-2 md:mb-0">
             <p className="text-sm text-text-medium">&copy; {new Date().getFullYear()} RedNote 小红书文案生成器. 保留所有权利</p>

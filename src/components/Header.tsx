@@ -39,12 +39,17 @@ const Header: React.FC = () => {
     WebkitAppRegion: isElectron ? 'no-drag' : undefined
   };
 
+  // 根据是否为Electron环境选择容器类名
+  const containerClassName = isElectron
+    ? "w-full flex justify-between items-center px-4"
+    : "container mx-auto flex justify-between items-center";
+
   return (
     <header 
       className="bg-white shadow-sm py-3" 
       style={headerStyle}
     >
-      <div className="container mx-auto flex justify-between items-center">
+      <div className={containerClassName}>
         <Link 
           href="/" 
           className="text-xl md:text-2xl font-bold text-redbook"

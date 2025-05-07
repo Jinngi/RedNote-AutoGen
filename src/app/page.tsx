@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import InputForm from '@/components/InputForm';
@@ -8,6 +8,13 @@ import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
 import { generateContent, GenerateResult } from '@/utils/api';
+
+interface ElectronWindow extends Window {
+  electron?: {
+    minimizeWindow: () => void;
+    closeWindow: () => void;
+  };
+}
 
 export default function Home() {
   const [results, setResults] = useState<GenerateResult[]>([]);
@@ -19,6 +26,14 @@ export default function Home() {
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   // 添加当前显示的卡片索引状态
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    // 检测Electron环境
+    if (typeof window !== 'undefined' && (window as ElectronWindow).electron) {
+      setIsElectron(true);
+    }
+  }, []);
 
   // 是否显示左侧样式选择器
   const showStyleSelector = results.length > 0;
@@ -91,11 +106,16 @@ export default function Home() {
     }
   };
 
+  // 根据是否是Electron环境决定容器类名
+  const containerClassName = isElectron 
+    ? "w-full px-2 py-4 flex-grow overflow-hidden" 
+    : "container mx-auto px-2 py-4 flex-grow overflow-hidden";
+
   return (
     <div className="flex flex-col h-screen">
       <Header />
       
-      <div className="container mx-auto px-2 py-4 flex-grow overflow-hidden">
+      <div className={containerClassName}>
         <div className="flex flex-col md:flex-row gap-2 h-full">
           {/* 左侧区域 */}
           <div className="w-full md:w-1/3 space-y-4 md:h-full md:overflow-auto">

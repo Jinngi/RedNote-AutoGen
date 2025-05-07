@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 
@@ -214,15 +214,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full">
+              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ minHeight: '150px' }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
                   className="w-full h-full object-cover"
+                  style={{ maxHeight: '100%' }}
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow`}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto`} style={{ minHeight: '200px' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -254,15 +255,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full">
+              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ minHeight: '150px' }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
                   className="w-full h-full object-cover"
+                  style={{ maxHeight: '100%' }}
                 />
               </div>
             )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow`}>
+            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto`} style={{ minHeight: '200px' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
               <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
               <div className="flex flex-wrap gap-2">
@@ -298,6 +300,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 src={imageUrl} 
                 alt={title} 
                 className="w-full h-full object-cover"
+                style={{ maxHeight: '100%' }}
               />
             )}
             <div 
@@ -305,20 +308,29 @@ const ResultCard: React.FC<ResultCardProps> = ({
               style={{ 
                 background: isTextOnly 
                   ? (colorTheme === 'gradient' ? colors.background : colors.secondary)
-                  : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)'
+                  : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
+                zIndex: 10  // 确保文字在图片上层
               }}
             >
               <div className="flex-grow"></div>
-              <div>
+              <div style={{ minHeight: '150px' }}>
                 <h3 
                   className="text-xl font-bold mb-4" 
-                  style={{ color: isTextOnly ? colors.primary : '#fff' }}
+                  style={{ 
+                    color: isTextOnly ? colors.primary : '#fff',
+                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)' // 添加文字阴影提高可读性
+                  }}
                 >
                   {title}
                 </h3>
                 <p 
-                  className="whitespace-pre-line mb-6 line-clamp-3" 
-                  style={{ color: isTextOnly ? colors.text : '#fff' }}
+                  className="whitespace-pre-line mb-6" 
+                  style={{ 
+                    color: isTextOnly ? colors.text : '#fff',
+                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
+                    maxHeight: '150px',
+                    overflow: 'auto'
+                  }}
                 >
                   {body}
                 </p>
@@ -328,8 +340,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
                       key={index} 
                       className="inline-block px-3 py-1 rounded-full text-sm" 
                       style={{ 
-                        backgroundColor: 'rgba(255,255,255,0.2)',
-                        color: isTextOnly ? colors.primary : '#fff'
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                        color: isTextOnly ? colors.primary : '#fff',
+                        textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.5)'
                       }}
                     >
                       {tag}
@@ -536,6 +549,24 @@ const ResultCard: React.FC<ResultCardProps> = ({
         );
     }
   };
+
+  // 添加一个确保窗口正确渲染的检查
+  useEffect(() => {
+    // 当卡片加载完成后，确保文字内容可见
+    if (cardRef.current) {
+      const textElements = cardRef.current.querySelectorAll('h3, p, span');
+      textElements.forEach(el => {
+        // 检查是否为隐藏元素
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          // 重置样式以确保可见
+          (el as HTMLElement).style.display = 'block';
+          (el as HTMLElement).style.visibility = 'visible';
+          (el as HTMLElement).style.opacity = '1';
+        }
+      });
+    }
+  }, [imageUrl, cardStyle, colorTheme]);
 
   return (
     <div className="card mb-6 h-full flex flex-col">
