@@ -6,19 +6,39 @@ import Footer from '@/components/Footer';
 import InputForm from '@/components/InputForm';
 import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
+import StyleSelector from '@/components/StyleSelector';
 import { generateContent, GenerateResult } from '@/utils/api';
 
 export default function Home() {
   const [results, setResults] = useState<GenerateResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
+  const [currentCardStyle, setCurrentCardStyle] = useState('standard');
+  const [currentColorTheme, setCurrentColorTheme] = useState('redbook');
+  const [currentCardRatio, setCurrentCardRatio] = useState('4:5');
+  const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
 
-  const handleGenerate = async (context: string, theme: string, description: string, imageGenerationType: string) => {
+  // 是否显示左侧样式选择器
+  const showStyleSelector = results.length > 0;
+
+  const handleGenerate = async (
+    context: string, 
+    theme: string, 
+    description: string, 
+    imageGenerationType: string,
+    cardStyle: string,
+    colorTheme: string,
+    cardRatio: string
+  ) => {
     setIsLoading(true);
     try {
       const generatedResults = await generateContent(context, theme, description, imageGenerationType);
       setResults(generatedResults);
       setDownloadedIds([]);
+      setCurrentCardStyle(cardStyle);
+      setCurrentColorTheme(colorTheme);
+      setCurrentCardRatio(cardRatio);
+      setHasGeneratedContent(true);
     } catch (error) {
       console.error('生成内容时出错:', error);
       // 这里可以添加错误提示UI
@@ -41,15 +61,43 @@ export default function Home() {
     );
   };
 
+  const handleStyleChange = (style: string) => {
+    setCurrentCardStyle(style);
+  };
+
+  const handleColorThemeChange = (theme: string) => {
+    setCurrentColorTheme(theme);
+  };
+
+  const handleCardRatioChange = (ratio: string) => {
+    setCurrentCardRatio(ratio);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       
       <div className="container mx-auto px-4 py-8 flex-grow">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* 左侧输入区 */}
-          <div className="w-full md:w-1/3">
-            <InputForm onGenerate={handleGenerate} isLoading={isLoading} />
+          {/* 左侧区域 */}
+          <div className="w-full md:w-1/3 space-y-6">
+            {/* 输入表单 */}
+            <InputForm 
+              onGenerate={handleGenerate} 
+              isLoading={isLoading} 
+            />
+            
+            {/* 样式选择器（仅当有结果时显示） */}
+            {showStyleSelector && (
+              <StyleSelector
+                cardStyle={currentCardStyle}
+                colorTheme={currentColorTheme}
+                cardRatio={currentCardRatio}
+                onStyleChange={handleStyleChange}
+                onColorThemeChange={handleColorThemeChange}
+                onCardRatioChange={handleCardRatioChange}
+              />
+            )}
           </div>
           
           {/* 右侧结果展示区 */}
@@ -69,6 +117,9 @@ export default function Home() {
                         id={result.id}
                         content={result.content}
                         imageUrl={result.imageUrl}
+                        cardStyle={currentCardStyle}
+                        colorTheme={currentColorTheme}
+                        cardRatio={currentCardRatio}
                         onDownload={handleDownload}
                         onContentUpdate={handleContentUpdate}
                       />
@@ -79,6 +130,9 @@ export default function Home() {
                   <DownloadAllButton
                     results={results}
                     isDisabled={isLoading}
+                    cardStyle={currentCardStyle}
+                    colorTheme={currentColorTheme}
+                    cardRatio={currentCardRatio}
                   />
                 </div>
               </div>

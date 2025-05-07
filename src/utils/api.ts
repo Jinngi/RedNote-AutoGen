@@ -49,7 +49,7 @@ function getRandomImage(): string {
  * @param context 上下文内容
  * @param theme 主题
  * @param description 文案描述
- * @param imageGenerationType 图片生成方式 ('random' | 'web')
+ * @param imageGenerationType 图片生成方式 ('random' | 'web' | 'none')
  * @returns 生成的结果
  */
 export async function generateContent(
@@ -131,7 +131,10 @@ export async function generateContent(
       const content = contentParts[i].trim();
       let imageUrl = '';
       
-      if (imageGenerationType === 'web') {
+      // 无图模式下不生成图片
+      if (imageGenerationType === 'none') {
+        imageUrl = '';
+      } else if (imageGenerationType === 'web') {
         // 基于文案内容搜索相关图片
         imageUrl = await searchImage(content);
       } else {

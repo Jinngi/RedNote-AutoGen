@@ -9,9 +9,18 @@ interface DownloadAllButtonProps {
     imageUrl: string;
   }>;
   isDisabled: boolean;
+  cardStyle: string;
+  colorTheme: string;
+  cardRatio: string;
 }
 
-const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({ results, isDisabled }) => {
+const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({ 
+  results, 
+  isDisabled, 
+  cardStyle, 
+  colorTheme, 
+  cardRatio 
+}) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadAll = async () => {
@@ -57,7 +66,10 @@ const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({ results, isDisabl
             body: JSON.stringify({
               id: result.id,
               content: result.content,
-              imageUrl: result.imageUrl
+              imageUrl: result.imageUrl,
+              cardStyle,
+              colorTheme,
+              cardRatio
             }),
           });
 
