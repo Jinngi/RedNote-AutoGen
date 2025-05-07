@@ -23,6 +23,83 @@ export interface ImageTaskStatus {
 }
 
 /**
+ * 使用LLM将中文提示词转换为适合Stable Diffusion的英文提示词
+ * @param chinesePrompt 中文提示词
+ * @returns 转换后的英文提示词
+ */
+export async function translatePromptToConciseEnglish(chinesePrompt: string): Promise<string> {
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const llmModel = process.env.NEXT_PUBLIC_LLM_MODEL || 'gpt-3.5-turbo';
+    
+    if (!apiKey || !apiBaseUrl) {
+      logger.error('API配置缺失，请检查环境变量');
+      throw new Error('API配置缺失，请检查环境变量');
+    }
+
+    logger.info(`开始转换提示词: "${chinesePrompt.substring(0, 50)}..."`);
+
+    // 构建发送给LLM的提示词
+    const prompt = `
+    请将以下中文提示词转换为适合Stable Diffusion模型的英文提示词。
+    要求：
+    1. 提取关键内容，翻译成简洁有效的英文短语
+    2. 增加一些适合图像生成的修饰词，如"high quality, detailed, beautiful lighting"等
+    3. 去除不必要的修饰词，保持核心含义
+    4. 返回的内容只包含英文提示词，不要有任何解释或其他文字
+    5. 确保结果是精简的英文短语，而不是完整句子
+
+    中文提示词:
+    ${chinesePrompt}
+    
+    英文提示词(只返回翻译结果):
+    `;
+
+    logger.info(`使用模型: ${llmModel}转换提示词`);
+
+    // 调用LLM API
+    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: llmModel,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`提示词转换API请求失败: ${response.status} ${errorText}`);
+      throw new Error(`提示词转换API请求失败: ${response.status} ${errorText}`);
+    }
+    
+    const responseData = await response.json();
+    
+    // 解析LLM返回的内容
+    const englishPrompt: string = responseData.choices[0]?.message?.content.trim() || '';
+    
+    logger.success(`提示词转换成功: "${englishPrompt.substring(0, 50)}..."`);
+    return englishPrompt;
+    
+  } catch (error) {
+    logger.error(`提示词转换失败: ${error instanceof Error ? error.message : String(error)}`);
+    // 如果转换失败，返回原始提示词加上一些基本英文描述
+    return `${chinesePrompt} beautiful photo high quality`;
+  }
+}
+
+/**
  * 根据文本内容搜索相关图片
  * @param searchQuery 搜索关键词
  * @returns 图片URL

@@ -7,7 +7,7 @@ import InputForm from '@/components/InputForm';
 import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
-import { generateContent, GenerateResult, createImageTask, getImageTaskStatus, getImageTaskResult } from '@/utils/api';
+import { generateContent, GenerateResult, createImageTask, getImageTaskStatus, getImageTaskResult, translatePromptToConciseEnglish } from '@/utils/api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import TabPanel from '@/components/TabPanel';
@@ -160,10 +160,19 @@ export default function Home() {
       setImageGenerationStatus('PENDING');
       
       // 提取文案标题作为提示词
-      const prompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
+      // 旧版本的提示词：直接拼接中文和英文
+      // const prompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
+      
+      // 新版本：使用LLM将中文提示词转换为更适合Stable Diffusion的英文提示词
+      const chinesePrompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
+      logger.info(`中文原始提示词: ${chinesePrompt}`);
+      
+      // 调用LLM翻译提示词
+      const englishPrompt = await translatePromptToConciseEnglish(chinesePrompt);
+      logger.info(`转换后的英文提示词: ${englishPrompt}`);
       
       // 创建图像生成任务（异步）
-      const taskId = await createImageTask(prompt);
+      const taskId = await createImageTask(englishPrompt);
       setImageTaskId(taskId);
       logger.info(`图像生成任务已创建，任务ID: ${taskId}，开始监控任务状态`);
       
