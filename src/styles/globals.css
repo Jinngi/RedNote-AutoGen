@@ -34,6 +34,6 @@
     @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-redbook focus:border-transparent;
   }
   .card {
-    @apply bg-white rounded-lg shadow-md p-4;
+    @apply bg-white rounded-lg shadow-md p-4 border border-gray-200;
   }
 } 

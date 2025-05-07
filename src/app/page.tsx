@@ -312,10 +312,7 @@ export default function Home() {
   // 创建结果面板内容
   const resultPanelContent = (
     <div className="flex-1 overflow-hidden flex flex-col">
-      <h2 className="text-xl font-bold text-text-dark mb-3">
-        {results.length > 0 ? `生成结果 (${currentCardIndex + 1}/${results.length})` : '预览效果'}
-      </h2>
-      <div className="flex-1 overflow-auto pb-16">
+      <div className="flex-1 overflow-y-auto pb-16">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="text-redbook">正在生成中，请稍候...</div>
@@ -446,7 +443,7 @@ export default function Home() {
           </div>
           
           {/* 右侧结果展示区 */}
-          <div className="w-full md:w-2/3 flex flex-col overflow-hidden">
+          <div className="w-full md:w-2/3 flex flex-col overflow-hidden border-l border-gray-200">
             {/* 使用标签页组件替换原来的结果展示区 */}
             <TabPanel
               tabs={tabs}
@@ -462,7 +459,7 @@ export default function Home() {
             
             {/* 卡片导航按钮和下载按钮 - 使用sticky替代fixed */}
             {(results.length > 0 || showExample) && (
-              <div className="sticky bottom-0 w-full bg-white p-3 border-t border-gray-200 flex justify-between items-center z-10">
+              <div className="sticky bottom-0 w-full bg-white p-3 border-t border-gray-200 flex justify-between items-center z-10 shadow-md">
                 <div className="flex gap-2">
                   <button
                     onClick={handlePrevCard}

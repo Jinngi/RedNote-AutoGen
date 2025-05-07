@@ -45,13 +45,40 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 获取卡片比例样式
   const getRatioStyle = () => {
-    // 修改为自适应文字内容高度，不设置最大高度限制
-    return { 
-      minHeight: '100px',
-      height: 'auto',
-      maxHeight: 'none', // 移除最大高度限制
-      overflow: 'visible' // 改为visible，确保内容不会被裁剪
-    };
+    // 根据不同的比例设置不同的样式
+    switch (cardRatio) {
+      case '1:1':  // 正方形
+        return { 
+          aspectRatio: '1/1',
+          width: '100%',
+          height: 'auto',
+          maxHeight: 'none',
+          overflow: 'visible'
+        };
+      case '4:5':  // 竖图
+        return { 
+          aspectRatio: '4/5',
+          width: '100%',
+          height: 'auto',
+          maxHeight: 'none',
+          overflow: 'visible'
+        };
+      case '4:6':  // 长图
+        return { 
+          aspectRatio: '2/3', // 4:6 简化为 2:3
+          width: '100%',
+          height: 'auto',
+          maxHeight: 'none',
+          overflow: 'visible'
+        };
+      default:
+        return { 
+          minHeight: '100px',
+          height: 'auto',
+          maxHeight: 'none',
+          overflow: 'visible'
+        };
+    }
   };
 
   // 获取主题颜色
@@ -235,7 +262,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
     // 内容编辑模式
     if (isEditing) {
       return (
-        <div className="p-4 bg-white rounded-lg h-full overflow-visible">
+        <div className="p-4 bg-white rounded-lg h-full overflow-y-auto">
           <textarea
             className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
             value={editedContent}
@@ -265,11 +292,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ minHeight: '150px' }}>
+              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ 
+                minHeight: '150px',
+                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+              }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-auto object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -306,11 +336,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ minHeight: '150px' }}>
+              <div className="md:w-1/2 overflow-visible h-auto relative" style={{ 
+                minHeight: '150px',
+                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+              }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-auto object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -342,14 +375,15 @@ const ResultCard: React.FC<ResultCardProps> = ({
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               height: 'auto',
-              minHeight: '200px'
+              minHeight: '200px',
+              aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
             }}
           >
             {!isTextOnly && (
               <img 
                 src={imageUrl} 
                 alt={title} 
-                className="w-full h-auto object-contain"
+                className="w-full h-full object-cover"
               />
             )}
             <div 
@@ -419,11 +453,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </div>
             
             {!isTextOnly && (
-              <div className="overflow-visible rounded-lg h-auto">
+              <div className="overflow-visible rounded-lg h-auto" style={{ 
+                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+              }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-auto object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -482,12 +518,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   <div className="md:w-1/3">
                     <div 
                       className="overflow-visible rounded-lg shadow-md" 
-                      style={{ borderColor: colors.primary, borderWidth: '1px' }}
+                      style={{ 
+                        borderColor: colors.primary, 
+                        borderWidth: '1px',
+                        aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+                      }}
                     >
                       <img 
                         src={imageUrl} 
                         alt={title} 
-                        className="w-full h-auto object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   </div>
@@ -567,11 +607,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             {!isTextOnly && (
-              <div className="w-full">
+              <div className="w-full" style={{ aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3' }}>
                 <img 
                   src={imageUrl} 
                   alt={title} 
-                  className="w-full h-auto object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -617,15 +657,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
   }, [imageUrl, cardStyle, colorTheme]);
 
   return (
-    <div className="card mb-6 h-auto flex flex-col" data-card-id={id}>
+    <div className="mb-6 h-auto flex flex-col" data-card-id={id}>
       <div 
         ref={cardRef} 
-        className="bg-white rounded-lg"
+        className="bg-white rounded-lg border border-gray-200 shadow-md"
         style={{ 
-          minHeight: '200px',
-          height: 'auto',
-          maxHeight: 'none', // 移除最大高度限制
-          overflow: 'visible' // 确保内容不会被裁剪
+          ...getRatioStyle(), // 应用比例样式
+          minHeight: '200px'
         }}
       >
         {renderCardContent()}

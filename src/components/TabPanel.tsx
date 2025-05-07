@@ -46,7 +46,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
           </button>
         ))}
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         {activeTab && activeTab.content}
       </div>
     </div>
