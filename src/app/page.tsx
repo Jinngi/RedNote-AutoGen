@@ -8,6 +8,8 @@ import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
 import { generateContent, GenerateResult } from '@/utils/api';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface ElectronWindow extends Window {
   electron?: {
@@ -146,62 +148,30 @@ export default function Home() {
   const handleDownloadImage = async () => {
     if (results.length > 0) {
       const currentResult = results[currentCardIndex];
-      try {
-        // 获取当前卡片元素
-        const cardElement = document.querySelector(`[data-card-id="${currentResult.id}"]`);
-        if (cardElement) {
-          console.log('找到卡片元素，准备下载图片...');
-          const { toPng } = await import('html-to-image');
+      if (currentResult.imageUrl) {
+        try {
+          console.log('开始下载图片...');
           
-          // 克隆节点并处理跨域图片
-          const clonedNode = cardElement.cloneNode(true) as HTMLElement;
-          const images = clonedNode.querySelectorAll('img');
-          
-          // 处理所有跨域图片，隐藏它们以避免CORS错误
-          for (let i = 0; i < images.length; i++) {
-            const img = images[i] as HTMLImageElement;
-            if (img.src.includes('picsum.photos') || img.src.includes('http')) {
-              img.style.visibility = 'hidden';
-            }
+          // 获取图片数据
+          const response = await fetch(currentResult.imageUrl);
+          if (!response.ok) {
+            throw new Error(`图片下载失败: ${response.status}`);
           }
-            
-          // 添加延时确保元素完全渲染
-          setTimeout(async () => {
-            try {
-              const dataUrl = await toPng(cardElement as HTMLElement, { 
-                quality: 0.95,
-                canvasWidth: 1200,
-                canvasHeight: 1500,
-                pixelRatio: 2,
-                cacheBust: true,
-                // 过滤跨域资源
-                filter: (node) => {
-                  if (node instanceof HTMLImageElement && 
-                      (node.src.includes('picsum.photos') || node.src.includes('http'))) {
-                    return false;
-                  }
-                  return true;
-                }
-              });
-              console.log('HTML转换成功，准备保存图片...');
-              // 使用a标签下载，确保兼容性
-              const link = document.createElement('a');
-              link.download = `rednote-${currentResult.id}.png`;
-              link.href = dataUrl;
-              link.click();
-              handleDownload(currentResult.id);
-            } catch (innerError) {
-              console.error('延时后下载图片仍然出错:', innerError);
-              alert('下载图片失败，请检查控制台获取详细错误信息');
-            }
-          }, 500);
-        } else {
-          console.error('找不到卡片元素');
-          alert('找不到卡片元素，无法下载图片');
+          
+          const blob = await response.blob();
+          
+          // 使用 FileSaver 保存图片
+          saveAs(blob, `rednote-image-${currentResult.id}.jpg`);
+          
+          handleDownload(currentResult.id);
+          console.log('图片下载完成');
+        } catch (error) {
+          console.error('下载图片时出错:', error);
+          alert('下载图片失败，请检查控制台获取详细错误信息');
         }
-      } catch (error) {
-        console.error('下载图片时出错:', error);
-        alert('下载图片失败，请检查控制台获取详细错误信息');
+      } else {
+        console.error('没有图片可下载');
+        alert('没有图片可下载');
       }
     }
   };
@@ -267,6 +237,48 @@ export default function Home() {
       alert('下载卡片失败，请检查控制台获取详细错误信息');
     } finally {
       setIsGeneratingCard(false);
+    }
+  };
+
+  const handleDownloadZip = async () => {
+    if (results.length > 0) {
+      try {
+        console.log('开始创建压缩包...');
+        setIsGeneratingCard(true);
+        
+        const currentResult = results[currentCardIndex];
+        
+        // 创建新的 ZIP 实例
+        const zip = new JSZip();
+        
+        // 添加内容的文本文件
+        zip.file(`小红书文案-${currentResult.id}.txt`, currentResult.content);
+        
+        // 如果有图片，下载图片并添加到压缩包
+        if (currentResult.imageUrl) {
+          try {
+            const response = await fetch(currentResult.imageUrl);
+            if (!response.ok) {
+              throw new Error(`图片下载失败: ${response.status}`);
+            }
+            const imageBlob = await response.blob();
+            zip.file(`小红书图片-${currentResult.id}.jpg`, imageBlob);
+          } catch (imgError) {
+            console.error('下载图片时出错:', imgError);
+          }
+        }
+        
+        // 生成并下载 ZIP
+        const content = await zip.generateAsync({ type: 'blob' });
+        saveAs(content, `小红书内容-${currentResult.id}.zip`);
+        
+        console.log('压缩包创建完成');
+      } catch (error) {
+        console.error('创建压缩包时出错:', error);
+        alert('创建压缩包失败，请检查控制台获取详细错误信息');
+      } finally {
+        setIsGeneratingCard(false);
+      }
     }
   };
 
@@ -443,6 +455,13 @@ export default function Home() {
                         className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
                       >
                         {isGeneratingCard ? '生成中...' : '下载完整卡片'}
+                      </button>
+                      <button
+                        onClick={handleDownloadZip}
+                        disabled={isGeneratingCard || isEditing || showExample}
+                        className={`btn-primary ${(isGeneratingCard || isEditing || showExample) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      >
+                        下载压缩包
                       </button>
                     </>
                   )}

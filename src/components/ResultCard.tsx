@@ -127,64 +127,26 @@ const ResultCard: React.FC<ResultCardProps> = ({
   const colors = getThemeColors();
 
   const handleDownload = async () => {
-    if (cardRef.current) {
+    if (imageUrl) {
       try {
-        console.log('开始转换HTML为图片...');
+        console.log('开始下载图片...');
         
-        // 替换跨域图片元素，转换为canvas可以处理的格式
-        const clonedNode = cardRef.current.cloneNode(true) as HTMLElement;
-        const images = clonedNode.querySelectorAll('img');
+        // 将图片 URL 转换为 Blob
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+
+        // 使用 FileSaver 保存图片
+        saveAs(blob, `rednote-image-${id}.jpg`);
         
-        // 替换所有图片为空白或本地可用的图片
-        for (let i = 0; i < images.length; i++) {
-          const img = images[i] as HTMLImageElement;
-          if (img.src.includes('picsum.photos') || img.src.includes('http')) {
-            // 为了避免CORS问题，可以使用一个空白的Base64图片或者一个本地可用的图片
-            img.style.visibility = 'hidden'; // 或者隐藏图片区域
-          }
-        }
-        
-        // 添加延时确保元素完全渲染
-        setTimeout(async () => {
-          try {
-            if (cardRef.current) { // 再次检查，确保非空
-              const dataUrl = await toPng(cardRef.current, { 
-                quality: 0.95,
-                canvasWidth: 1200, // 增加分辨率
-                canvasHeight: 1500,
-                pixelRatio: 2, // 提高像素比
-                cacheBust: true, // 避免缓存问题
-                // 处理跨域资源
-                filter: (node) => {
-                  // 过滤掉可能会导致CORS问题的节点
-                  if (node instanceof HTMLImageElement && 
-                      (node.src.includes('picsum.photos') || node.src.includes('http'))) {
-                    return false;
-                  }
-                  return true;
-                }
-              });
-              
-              console.log('HTML转换成功，准备保存图片...');
-              // 使用a标签下载，确保兼容性
-              const link = document.createElement('a');
-              link.download = `rednote-${id}.png`;
-              link.href = dataUrl;
-              link.click();
-              onDownload(id);
-            }
-          } catch (innerError) {
-            console.error('延时后下载图片仍然出错:', innerError);
-            alert('下载图片失败，请检查控制台获取详细错误信息');
-          }
-        }, 500);
+        onDownload(id);
+        console.log('图片下载完成');
       } catch (error) {
         console.error('下载图片时出错:', error);
         alert('下载图片失败，请检查控制台获取详细错误信息');
       }
     } else {
-      console.error('卡片元素引用不存在');
-      alert('卡片元素不存在，无法下载图片');
+      console.error('没有图片可下载');
+      alert('没有图片可下载');
     }
   };
 
