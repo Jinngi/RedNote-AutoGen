@@ -40,6 +40,8 @@
   /* Markdown样式 */
   .markdown-content {
     @apply text-text-medium leading-relaxed;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
   
   .markdown-content h1 {
@@ -56,6 +58,7 @@
   
   .markdown-content p {
     @apply mb-4;
+    white-space: pre-wrap;
   }
   
   .markdown-content ul {
@@ -104,5 +107,11 @@
   
   .markdown-content img {
     @apply max-w-full h-auto my-4 rounded;
+  }
+  
+  .markdown-content br {
+    display: block;
+    content: "";
+    margin-top: 0.5rem;
   }
 } 

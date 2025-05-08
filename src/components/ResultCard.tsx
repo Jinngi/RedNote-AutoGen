@@ -45,8 +45,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 解析内容，提取标题和正文
   const parseContent = () => {
-    const lines = editedContent.split('\n').filter(line => line.trim());
-    const title = lines[0] || '小红书文案';
+    const lines = editedContent.split('\n');
+    // 第一行作为标题
+    const title = lines[0]?.trim() || '小红书文案';
+    
+    // 将剩余行作为正文（保持原格式，不过滤空行）
+    // 这样可以保持Markdown格式的完整性
     const body = lines.slice(1).join('\n');
     
     // 提取标签
@@ -476,13 +480,36 @@ const ResultCard: React.FC<ResultCardProps> = ({
     const combinedStyle = {
       ...customStyle,
       fontFamily: fontStyleFamily,
-      fontSize: fontSizeStyles.body
+      fontSize: fontSizeStyles.body,
+      whiteSpace: 'pre-wrap' as 'pre-wrap', // 显式类型转换为CSS属性
+      wordBreak: 'break-word' as 'break-word', // 显式类型转换为CSS属性
     };
     
     // 使用div包装ReactMarkdown，并应用样式到div上
     return (
       <div className={`markdown-content ${additionalClassName || ""}`} style={combinedStyle}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]} 
+          components={{
+            // 确保段落正确处理换行
+            p: ({node, ...props}) => <p style={{marginBottom: '1em'}} {...props} />,
+            // 确保链接正确显示
+            a: ({node, ...props}) => <a className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+            // 确保列表正确缩进
+            ul: ({node, ...props}) => <ul style={{paddingLeft: '1.5em', marginBottom: '1em'}} {...props} />,
+            ol: ({node, ...props}) => <ol style={{paddingLeft: '1.5em', marginBottom: '1em'}} {...props} />,
+            // 确保代码块正确显示
+            code: ({node, className, ...props}: any) => {
+              const match = /language-(\w+)/.exec(className || '');
+              const inline = !match;
+              return inline ? 
+                <code style={{backgroundColor: 'rgba(0,0,0,0.1)', padding: '0.2em 0.4em', borderRadius: '3px'}} {...props} /> : 
+                <pre style={{backgroundColor: 'rgba(0,0,0,0.1)', padding: '1em', borderRadius: '5px', overflow: 'auto', marginBottom: '1em'}}>
+                  <code className={className} {...props} />
+                </pre>
+            }
+          }}
+        >
           {text}
         </ReactMarkdown>
       </div>
