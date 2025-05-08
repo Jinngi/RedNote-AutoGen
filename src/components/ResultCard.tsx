@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 import ImageGenerationProgress from './ImageGenerationProgress';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ResultCardProps {
   id: string;
@@ -380,6 +382,18 @@ const ResultCard: React.FC<ResultCardProps> = ({
     }
   };
 
+  // 渲染Markdown内容，使用更简单的方式
+  const renderMarkdownContent = (text: string, additionalClassName?: string, customStyle?: React.CSSProperties) => {
+    // 使用div包装ReactMarkdown，并应用样式到div上
+    return (
+      <div className={`markdown-content ${additionalClassName || ""}`} style={customStyle}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  };
+
   // 根据卡片样式渲染不同的内容
   const renderCardContent = () => {
     // 无图模式判断
@@ -425,7 +439,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
-              <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
+              <div className="mb-6 flex-grow">
+                {renderMarkdownContent(body)}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
                   <span 
@@ -466,7 +482,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
-              <p className="whitespace-pre-line mb-6 flex-grow">{body}</p>
+              <div className="mb-6 flex-grow">
+                {renderMarkdownContent(body)}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
                   <span 
@@ -518,15 +536,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 >
                   {title}
                 </h3>
-                <p 
-                  className="whitespace-pre-line mb-6" 
-                  style={{ 
+                <div className="mb-6">
+                  {renderMarkdownContent(body, "", { 
                     color: isTextOnly ? colors.text : '#fff',
                     textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
-                  }}
-                >
-                  {body}
-                </p>
+                  })}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag, index) => (
                     <span 
@@ -571,7 +586,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             )}
             
             <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col overflow-auto h-full`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem' }}>
-              <p className="whitespace-pre-line text-sm mb-4 flex-grow">{body}</p>
+              <div className="text-sm mb-4 flex-grow">
+                {renderMarkdownContent(body, "text-sm")}
+              </div>
               <div className="flex flex-wrap gap-1">
                 {tags.slice(0, 3).map((tag, index) => (
                   <span 
@@ -636,14 +653,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 )}
                 
                 <div className={`${isTextOnly ? 'w-full' : 'md:w-2/3'} flex flex-col flex-grow overflow-auto`}>
-                  <p 
-                    className="whitespace-pre-line mb-6 first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2 flex-grow"
+                  <div 
+                    className="markdown-container mb-6 flex-grow"
                     style={{ 
                       lineHeight: '1.8'
                     }}
                   >
-                    {body}
-                  </p>
+                    {renderMarkdownContent(body, "markdown-container first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2")}
+                  </div>
                   
                   <div className="flex flex-wrap gap-2 justify-end">
                     {tags.map((tag, index) => (
@@ -678,7 +695,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             }}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: colors.primary }}>{title}</h3>
-            <p className="whitespace-pre-line mb-8 text-lg flex-grow" style={{ lineHeight: '1.8' }}>{body}</p>
+            <div className="mb-8 text-lg flex-grow" style={{ lineHeight: '1.8' }}>
+              {renderMarkdownContent(body, "text-lg")}
+            </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag, index) => (
                 <span 
@@ -718,7 +737,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             )}
             <div className="p-6 flex-grow overflow-auto">
               <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
-              <p className="whitespace-pre-line mb-6">{body}</p>
+              <div className="mb-6">
+                {renderMarkdownContent(body)}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
                   <span 
