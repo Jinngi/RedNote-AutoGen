@@ -313,6 +313,8 @@ export async function generateContent(
     3. 正文内容丰富，符合小红书风格，语言生动活泼
     4. 标签使用井号(#)开头，至少包含3个标签
     5. 总体文字在200-500字之间
+    6. 文字要活泼，有emoji表情
+    7. 三篇要逐步递进的讨论，内容要不同，但需要前后关联，逐步递进
     
     【主题】
     ${theme}
@@ -344,7 +346,7 @@ export async function generateContent(
           }
         ],
         temperature: 0.7,
-        max_tokens: 1500
+        max_tokens: 4096
       })
     });
     
