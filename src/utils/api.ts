@@ -23,6 +23,14 @@ export interface ImageTaskStatus {
 }
 
 /**
+ * 翻译结果接口
+ */
+export interface TranslationResult {
+  translation: string;
+  keywords: string[];
+}
+
+/**
  * 使用LLM将中文提示词转换为适合Stable Diffusion的英文提示词
  * @param chinesePrompt 中文提示词
  * @returns 转换后的英文提示词
@@ -408,5 +416,137 @@ export async function generateContent(
     console.error('生成内容时出错:', error);
     logger.error(`生成内容失败: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
+  }
+}
+
+/**
+ * 将中文文本翻译为英文并提取关键词
+ * @param chineseText 中文文本
+ * @returns 翻译结果及关键词
+ */
+export async function translateToEnglish(chineseText: string): Promise<TranslationResult> {
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const llmModel = process.env.NEXT_PUBLIC_LLM_MODEL || 'gpt-3.5-turbo';
+    
+    if (!apiKey || !apiBaseUrl) {
+      logger.error('API配置缺失，请检查环境变量');
+      throw new Error('API配置缺失，请检查环境变量');
+    }
+
+    logger.info(`开始翻译文本并提取关键词: "${chineseText.substring(0, 50)}..."`);
+
+    // 构建发送给LLM的提示词
+    const prompt = `
+    将以下中文文本翻译为英文，并提取出3个最适合用于图片搜索的关键词。
+    
+    要求：
+    1. 翻译保持原文的核心含义
+    2. 提取的关键词应该是最能代表文本主题的实体或概念
+    3. 关键词应该适合用于图片搜索引擎
+    4. 返回格式必须是JSON，包含translation和keywords两个字段
+    
+    中文文本:
+    ${chineseText}
+    
+    JSON格式返回(keywords必须是一个数组):
+    `;
+
+    logger.info(`使用模型: ${llmModel}翻译并提取关键词`);
+
+    // 调用LLM API
+    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: llmModel,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+        response_format: { type: "json_object" }
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`翻译API请求失败: ${response.status} ${errorText}`);
+      throw new Error(`翻译API请求失败: ${response.status} ${errorText}`);
+    }
+    
+    const responseData = await response.json();
+    
+    // 解析LLM返回的JSON内容
+    const resultContent = responseData.choices[0]?.message?.content || '{}';
+    const parsedResult = JSON.parse(resultContent);
+    
+    if (!parsedResult.translation || !Array.isArray(parsedResult.keywords)) {
+      throw new Error('LLM返回的结果格式不正确，缺少translation或keywords字段');
+    }
+    
+    const result: TranslationResult = {
+      translation: parsedResult.translation,
+      keywords: parsedResult.keywords
+    };
+    
+    logger.success(`翻译和关键词提取成功，关键词: ${result.keywords.join(', ')}`);
+    return result;
+    
+  } catch (error) {
+    logger.error(`翻译失败: ${error instanceof Error ? error.message : String(error)}`);
+    // 如果失败，返回原始文本和一些基本关键词
+    return {
+      translation: chineseText,
+      keywords: ['photography', 'beautiful', 'high quality']
+    };
+  }
+}
+
+/**
+ * 搜索网络图片
+ * @param keywords 搜索关键词数组
+ * @returns 图片URL数组
+ */
+export async function searchWebImages(keywords: string[]): Promise<string[]> {
+  try {
+    const keywordsStr = keywords.join(' ');
+    logger.info(`搜索网络图片，关键词: ${keywordsStr}`);
+    
+    // 生成5个不同的随机种子，基于搜索关键词
+    const results: string[] = [];
+    const baseWidth = 800;
+    const baseHeight = 600;
+    
+    // 为简化示例，我们使用Picsum Photos作为图片源
+    // 在实际实现中，这里应该调用真实的图片搜索API
+    for (let i = 0; i < 8; i++) {
+      const seed = encodeURIComponent(`${keywordsStr}${i}`).slice(0, 30);
+      const randomId = Math.floor(Math.random() * 1000) + i;
+      const imageUrl = `https://picsum.photos/seed/${seed}${randomId}/${baseWidth}/${baseHeight}`;
+      results.push(imageUrl);
+    }
+    
+    logger.success(`成功获取${results.length}张网络图片`);
+    return results;
+  } catch (error) {
+    console.error('搜索网络图片时出错:', error);
+    logger.error(`搜索网络图片失败: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // 如果搜索失败，返回一些默认图片
+    const fallbackResults: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      fallbackResults.push(`https://picsum.photos/800/600?random=${i}`);
+    }
+    
+    logger.warn(`使用默认图片，返回${fallbackResults.length}张图片`);
+    return fallbackResults;
   }
 } 

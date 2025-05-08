@@ -8,6 +8,7 @@ import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
 import ImagePromptModal from '@/components/ImagePromptModal';
+import WebImageSearchModal from '@/components/WebImageSearchModal';
 import { generateContent, GenerateResult, createImageTask, getImageTaskStatus, getImageTaskResult, translatePromptToConciseEnglish } from '@/utils/api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -52,6 +53,8 @@ export default function Home() {
 
   // 添加弹窗状态
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  // 添加网络搜图弹窗状态
+  const [isWebSearchModalOpen, setIsWebSearchModalOpen] = useState(false);
 
   // 默认示例内容
   const exampleResult: GenerateResult = {
@@ -567,6 +570,45 @@ export default function Home() {
     }
   };
 
+  // 处理网络搜图
+  const handleWebImageSearch = () => {
+    if ((results.length === 0 && !showExample)) return;
+    
+    // 确定当前是示例还是生成的内容
+    if (showExample) {
+      // 使用示例内容的标题
+      const { title } = parseContent(exampleResult.content);
+      setIsWebSearchModalOpen(true);
+    } else {
+      // 使用生成内容的标题
+      const currentResult = results[currentCardIndex];
+      const { title } = parseContent(currentResult.content);
+      setIsWebSearchModalOpen(true);
+    }
+  };
+  
+  // 处理网络搜图结果选择
+  const handleSelectWebImage = (imageUrl: string) => {
+    if (showExample) {
+      // 修改示例图片
+      setShowExample(false);
+      const newResult = { ...exampleResult, imageUrl };
+      setResults([newResult]);
+      setHasGeneratedContent(true);
+      logger.success(`已从网络搜图选择图片并应用到卡片`);
+    } else {
+      // 修改当前结果的图片
+      setResults(prev => 
+        prev.map((result, idx) => 
+          idx === currentCardIndex 
+            ? { ...result, imageUrl } 
+            : result
+        )
+      );
+      logger.success(`已从网络搜图选择图片并应用到卡片`);
+    }
+  };
+
   // 渲染底部按钮组
   const renderBottomButtons = () => {
     if (isEditing) {
@@ -595,6 +637,13 @@ export default function Home() {
             className={`btn-secondary ${showExample ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             编辑文本
+          </button>
+          <button
+            onClick={handleWebImageSearch}
+            disabled={isGeneratingImage || isEditing}
+            className={`btn-secondary ${(isGeneratingImage || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            网络搜图
           </button>
           <button
             onClick={handleGenerateImage}
@@ -837,13 +886,17 @@ export default function Home() {
           isOpen={isPromptModalOpen}
           onClose={() => setIsPromptModalOpen(false)}
           onSubmit={handleSubmitPrompt}
-          defaultPrompt={
-            showExample 
-              ? parseContent(exampleResult.content).title 
-              : (results[currentCardIndex] ? parseContent(results[currentCardIndex].content).title : '')
-          }
+          defaultPrompt={showExample ? parseContent(exampleResult.content).title : parseContent(results[currentCardIndex]?.content || '').title}
         />
       )}
+      
+      {/* 网络搜图弹窗 */}
+      <WebImageSearchModal
+        isOpen={isWebSearchModalOpen}
+        onClose={() => setIsWebSearchModalOpen(false)}
+        onSelectImage={handleSelectWebImage}
+        defaultQuery={showExample ? parseContent(exampleResult.content).title : parseContent(results[currentCardIndex]?.content || '').title}
+      />
     </div>
   );
 } 
