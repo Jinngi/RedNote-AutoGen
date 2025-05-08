@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { toPng } from 'html-to-image';
 
 interface DownloadAllButtonProps {
   results: Array<{
@@ -55,30 +56,122 @@ const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({
         }
       });
 
-      // 准备所有卡片的 Promise
+      // 创建卡片转换的配置选项
+      const options = {
+        quality: 0.95,
+        pixelRatio: 2,
+        cacheBust: true,
+        onCloneNode: (node: HTMLElement) => {
+          if (node instanceof HTMLImageElement) {
+            // 对于blob URL，尝试将其在onCloneNode中预处理
+            if (node.src.startsWith('blob:')) {
+              // 这里不做处理，因为我们会在前面预处理
+            }
+            
+            // 处理加载失败的图片
+            if (node.complete && node.naturalWidth === 0) {
+              node.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFMEUwRTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5RTlFOUUiPuWbvueJh+aXoOazlei0qOmHjTwvdGV4dD48L3N2Zz4=';
+            }
+          }
+          return node;
+        },
+        fetchRequestInit: {
+          mode: 'cors' as RequestMode,
+          cache: 'no-cache' as RequestCache,
+        }
+      };
+
+      // 准备所有卡片的 Promise - 使用前端html-to-image库
       const cardPromises = results.map(async (result) => {
         try {
-          const response = await fetch('/api/generate-card', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: result.id,
-              content: result.content,
-              imageUrl: result.imageUrl,
-              cardStyle,
-              colorTheme,
-              cardRatio
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`生成卡片失败: ${result.id}`);
+          // 查找当前卡片元素
+          const cardElement = document.querySelector(`[data-card-id="${result.id}"]`)?.querySelector('div.bg-white');
+          
+          if (!cardElement) {
+            console.error(`未找到卡片元素: ${result.id}`);
+            return null;
           }
-
-          const blob = await response.blob();
-          return { id: result.id, blob };
+          
+          // 如果是blob URL，预处理图片
+          if (result.imageUrl && result.imageUrl.startsWith('blob:')) {
+            console.log(`检测到Blob URL (${result.id})，预先将图片转换为数据URL`);
+            try {
+              // 创建一个新的Image元素来加载图片
+              const img = new Image();
+              await new Promise<void>((resolve, reject) => {
+                img.onload = () => {
+                  // 创建canvas将图片转为dataURL
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // 找到所有引用这个blob URL的图片并替换
+                    const images = cardElement.querySelectorAll('img');
+                    images.forEach(imgEl => {
+                      if (imgEl.src === result.imageUrl) {
+                        imgEl.src = canvas.toDataURL('image/png');
+                      }
+                    });
+                    resolve();
+                  } else {
+                    reject(new Error('无法创建canvas上下文'));
+                  }
+                };
+                
+                img.onerror = () => {
+                  reject(new Error('图片加载失败'));
+                };
+                
+                img.crossOrigin = 'anonymous';
+                img.src = result.imageUrl;
+              });
+            } catch (error) {
+              console.error(`预处理Blob URL图片失败: ${result.id}`, error);
+              // 继续尝试，即使预处理失败
+            }
+          }
+          
+          // 确保所有图片都已加载
+          await new Promise<void>((resolve) => {
+            const images = cardElement.querySelectorAll('img');
+            let loadedCount = 0;
+            const totalImages = images.length;
+            
+            if (totalImages === 0) {
+              resolve();
+              return;
+            }
+            
+            const checkIfAllImagesLoaded = () => {
+              loadedCount++;
+              if (loadedCount === totalImages) {
+                resolve();
+              }
+            };
+            
+            images.forEach(img => {
+              if (img.complete) {
+                checkIfAllImagesLoaded();
+              } else {
+                img.addEventListener('load', checkIfAllImagesLoaded);
+                img.addEventListener('error', () => {
+                  img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFMEUwRTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5RTlFOUUiPuWbvueJh+aXoOazlei0qOmHjTwvdGV4dD48L3N2Zz4=';
+                  checkIfAllImagesLoaded();
+                });
+              }
+            });
+          });
+          
+          // 将卡片DOM转换为PNG图片
+          const dataUrl = await toPng(cardElement as HTMLElement, options);
+          
+          // 将dataURL转换为Blob
+          const blobData = await fetch(dataUrl).then(res => res.blob());
+          
+          return { id: result.id, blob: blobData };
         } catch (error) {
           console.error(`生成卡片 ${result.id} 时出错:`, error);
           return null;

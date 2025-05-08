@@ -191,57 +191,145 @@ const ResultCard: React.FC<ResultCardProps> = ({
     try {
       console.log('开始生成完整卡片...');
       
-      // 添加时间戳避免缓存
-      const timestamp = new Date().getTime();
-      
-      try {
-        // 调用后端API生成完整卡片
-        const response = await fetch(`/api/generate-card?t=${timestamp}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id,
-            content: editedContent,
-            imageUrl,
-            cardStyle,
-            colorTheme,
-            cardRatio
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API响应错误:', response.status, errorText);
-          throw new Error(`生成卡片失败: ${response.status} ${errorText}`);
-        }
-
-        console.log('API响应成功，准备下载卡片...');
-        const blob = await response.blob();
-        
-        // 使用a标签下载，确保兼容性
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `rednote-card-${id}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        
-        onDownload(id);
-        console.log('卡片下载完成');
-      } catch (apiError) {
-        console.error('API调用失败，尝试使用前端渲染:', apiError);
-        alert('通过API生成卡片失败，正在尝试使用前端方式下载...');
-        
-        // 降级方案：如果API失败，使用前端方法
-        handleDownload();
+      if (!cardRef.current) {
+        throw new Error('卡片元素不存在');
       }
+      
+      // 使用html-to-image直接在前端将卡片转换为图片
+      console.log('正在将卡片转换为图片...');
+      
+      // 如果是blob URL，先将图片转换为dataURL以确保可访问性
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        console.log('检测到Blob URL，预先将图片转换为数据URL');
+        try {
+          // 创建一个新的Image元素来加载图片
+          const img = new Image();
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => {
+              // 图片加载成功
+              // 创建canvas将图片转为dataURL
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                
+                // 找到所有引用这个blob URL的图片元素并替换
+                const images = cardRef.current?.querySelectorAll('img') || [];
+                images.forEach(imgEl => {
+                  if (imgEl.src === imageUrl) {
+                    // 替换为dataURL
+                    imgEl.src = canvas.toDataURL('image/png');
+                  }
+                });
+                
+                resolve();
+              } else {
+                reject(new Error('无法创建canvas上下文'));
+              }
+            };
+            
+            img.onerror = () => {
+              reject(new Error('图片加载失败'));
+            };
+            
+            // 设置crossOrigin以处理可能的跨域问题
+            img.crossOrigin = 'anonymous';
+            img.src = imageUrl;
+          });
+        } catch (error) {
+          console.error('预处理Blob URL图片失败:', error);
+          // 继续尝试，即使预处理失败
+        }
+      }
+      
+      // 创建配置选项以确保正确处理图片
+      const options = {
+        quality: 0.95,
+        pixelRatio: 2,
+        cacheBust: true, // 避免缓存问题
+        // 处理图片加载失败的情况
+        onCloneNode: (node: HTMLElement) => {
+          if (node instanceof HTMLImageElement) {
+            // 对于blob URL，尝试将其转换为内联数据
+            if (node.src.startsWith('blob:')) {
+              // 这里我们不直接修改，因为已经在前面预处理过了
+            }
+            
+            // 处理加载失败的图片
+            if (node.complete && node.naturalWidth === 0) {
+              node.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFMEUwRTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5RTlFOUUiPuWbvueJh+aXoOazlei0qOmHjTwvdGV4dD48L3N2Zz4=';
+            }
+          }
+          return node;
+        },
+        // 确保加载外部图片
+        fetchRequestInit: {
+          mode: 'cors' as RequestMode,
+          cache: 'no-cache' as RequestCache,
+        }
+      };
+      
+      // 首先确保所有图片都已加载
+      await new Promise<void>((resolve) => {
+        const images = cardRef.current?.querySelectorAll('img') || [];
+        let loadedCount = 0;
+        const totalImages = images.length;
+        
+        // 如果没有图片，直接完成
+        if (totalImages === 0) {
+          resolve();
+          return;
+        }
+        
+        // 检查每个图片是否已加载
+        const checkIfAllImagesLoaded = () => {
+          loadedCount++;
+          if (loadedCount === totalImages) {
+            resolve();
+          }
+        };
+        
+        // 为每个图片添加加载和错误事件
+        images.forEach(img => {
+          if (img.complete) {
+            checkIfAllImagesLoaded();
+          } else {
+            img.addEventListener('load', checkIfAllImagesLoaded);
+            img.addEventListener('error', () => {
+              // 处理图片加载失败
+              img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFMEUwRTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5RTlFOUUiPuWbvueJh+aXoOazlei0qOmHjTwvdGV4dD48L3N2Zz4=';
+              checkIfAllImagesLoaded();
+            });
+          }
+        });
+      });
+      
+      // 将卡片DOM转换为PNG图片
+      const dataUrl = await toPng(cardRef.current, options);
+      
+      // 将dataURL转换为Blob
+      const blobData = await fetch(dataUrl).then(res => res.blob());
+      
+      // 使用FileSaver保存图片
+      saveAs(blobData, `rednote-card-${id}.png`);
+      
+      onDownload(id);
+      console.log('卡片下载完成');
     } catch (error) {
       console.error('下载完整卡片时出错:', error);
       alert('下载卡片失败，请检查控制台获取详细错误信息');
+      
+      // 如果前端方式失败，可以尝试使用简单的图片下载作为备选方案
+      try {
+        if (imageUrl) {
+          console.log('尝试使用备选方案下载图片...');
+          handleDownload();
+        }
+      } catch (backupError) {
+        console.error('备选下载方案也失败:', backupError);
+      }
     } finally {
       setIsGeneratingCard(false);
     }
