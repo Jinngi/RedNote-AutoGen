@@ -7,6 +7,7 @@ import InputForm from '@/components/InputForm';
 import ResultCard from '@/components/ResultCard';
 import DownloadAllButton from '@/components/DownloadAllButton';
 import StyleSelector from '../components/StyleSelector';
+import ImagePromptModal from '@/components/ImagePromptModal';
 import { generateContent, GenerateResult, createImageTask, getImageTaskStatus, getImageTaskResult, translatePromptToConciseEnglish } from '@/utils/api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -45,6 +46,9 @@ export default function Home() {
   const [imageGenerationStatus, setImageGenerationStatus] = useState('PENDING');
   const [imageTaskId, setImageTaskId] = useState<string | null>(null);
   const imagePollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 添加弹窗状态
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 
   // 默认示例内容
   const exampleResult: GenerateResult = {
@@ -140,10 +144,25 @@ export default function Home() {
     }
   };
   
-  // 处理AI生成图片
+  // 处理AI生图
   const handleGenerateImage = async () => {
-    if (results.length === 0 || isGeneratingImage) return;
+    if ((results.length === 0 && !showExample) || isGeneratingImage) return;
     
+    // 确定当前是示例还是生成的内容
+    if (showExample) {
+      // 使用示例内容的标题
+      const { title } = parseContent(exampleResult.content);
+      setIsPromptModalOpen(true);
+    } else {
+      // 使用生成内容的标题
+      const currentResult = results[currentCardIndex];
+      const { title } = parseContent(currentResult.content);
+      setIsPromptModalOpen(true);
+    }
+  };
+  
+  // 处理提交修改后的提示词和风格
+  const handleSubmitPrompt = async (prompt: string, style: string) => {
     try {
       // 确保清除任何现有的轮询定时器
       if (imagePollingRef.current) {
@@ -151,20 +170,13 @@ export default function Home() {
         imagePollingRef.current = null;
       }
       
-      const currentResult = results[currentCardIndex];
-      const { title } = parseContent(currentResult.content);
-      
-      logger.info(`开始为文案生成AI图片，标题: ${title}`);
+      logger.info(`开始为文案生成AI图片，提示词: ${prompt}, 风格: ${style}`);
       setIsGeneratingImage(true);
       setImageGenerationProgress(0);
       setImageGenerationStatus('PENDING');
       
-      // 提取文案标题作为提示词
-      // 旧版本的提示词：直接拼接中文和英文
-      // const prompt = `${title}. 高质量风景图片，小红书风格，精美，清晰，色彩鲜艳`;
-      
-      // 新版本：使用LLM将中文提示词转换为更适合Stable Diffusion的英文提示词
-      const chinesePrompt = `${title}. 高质量风景图片，精美，清晰，色彩鲜艳，美女，写实`;
+      // 组合提示词和风格
+      const chinesePrompt = `${prompt}. ${style}, 高质量, 精美, 清晰, 色彩鲜艳`;
       logger.info(`中文原始提示词: ${chinesePrompt}`);
       
       // 调用LLM翻译提示词
@@ -500,8 +512,8 @@ export default function Home() {
           </button>
           <button
             onClick={handleGenerateImage}
-            disabled={showExample || isGeneratingImage || isEditing || results.length === 0}
-            className={`btn-secondary ${(showExample || isGeneratingImage || isEditing || results.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isGeneratingImage || isEditing}
+            className={`btn-secondary ${(isGeneratingImage || isEditing) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             AI生图
           </button>
@@ -712,6 +724,20 @@ export default function Home() {
       </div>
       
       <Footer />
+      
+      {/* 添加提示词修改弹窗 */}
+      {(results.length > 0 || showExample) && (
+        <ImagePromptModal
+          isOpen={isPromptModalOpen}
+          onClose={() => setIsPromptModalOpen(false)}
+          onSubmit={handleSubmitPrompt}
+          defaultPrompt={
+            showExample 
+              ? parseContent(exampleResult.content).title 
+              : (results[currentCardIndex] ? parseContent(results[currentCardIndex].content).title : '')
+          }
+        />
+      )}
     </div>
   );
 } 
