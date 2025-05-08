@@ -56,6 +56,24 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 获取卡片比例样式
   const getRatioStyle = () => {
+    // 检查是否是自定义比例格式 (custom:width:height)
+    if (cardRatio.startsWith('custom:')) {
+      const parts = cardRatio.split(':');
+      if (parts.length === 3) {
+        const width = parseInt(parts[1]);
+        const height = parseInt(parts[2]);
+        if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
+          return { 
+            aspectRatio: `${width}/${height}`,
+            width: '100%',
+            height: '100%',
+            maxHeight: 'none',
+            overflow: 'hidden'
+          };
+        }
+      }
+    }
+
     // 根据不同的比例设置不同的样式
     switch (cardRatio) {
       case '1:1':  // 正方形
@@ -81,6 +99,30 @@ const ResultCard: React.FC<ResultCardProps> = ({
           height: '100%', // 确保高度填满容器
           maxHeight: 'none',
           overflow: 'hidden' // 防止内容溢出
+        };
+      case '3:4':  // 竖版
+        return { 
+          aspectRatio: '3/4',
+          width: '100%',
+          height: '100%',
+          maxHeight: 'none',
+          overflow: 'hidden'
+        };
+      case '9:16':  // 全面屏
+        return { 
+          aspectRatio: '9/16',
+          width: '100%',
+          height: '100%',
+          maxHeight: 'none',
+          overflow: 'hidden'
+        };
+      case '16:9':  // 横幅
+        return { 
+          aspectRatio: '16/9',
+          width: '100%',
+          height: '100%',
+          maxHeight: 'none',
+          overflow: 'hidden'
         };
       default:
         return { 

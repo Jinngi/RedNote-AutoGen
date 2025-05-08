@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface StyleSelectorProps {
   cardStyle: string;
@@ -17,6 +17,26 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({
   onColorThemeChange,
   onCardRatioChange
 }) => {
+  const [customWidth, setCustomWidth] = useState('');
+  const [customHeight, setCustomHeight] = useState('');
+  const [showCustom, setShowCustom] = useState(cardRatio === 'custom');
+  
+  const handleCustomSizeSubmit = () => {
+    if (customWidth && customHeight) {
+      const customRatio = `custom:${customWidth}:${customHeight}`;
+      onCardRatioChange(customRatio);
+    }
+  };
+  
+  const handleRatioChange = (ratioId: string) => {
+    if (ratioId === 'custom') {
+      setShowCustom(true);
+    } else {
+      setShowCustom(false);
+      onCardRatioChange(ratioId);
+    }
+  };
+  
   return (
     <div className="card">
       <h3 className="text-lg font-medium mb-4 text-text-dark">调整卡片样式</h3>
@@ -91,20 +111,24 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({
           <label className="block mb-2 text-text-dark text-sm">
             卡片比例
           </label>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {[
               { id: '1:1', name: '正方形', width: 'w-10', height: 'h-10' },
               { id: '4:5', name: '竖图', width: 'w-8', height: 'h-10' },
-              { id: '4:6', name: '长图', width: 'w-7', height: 'h-10' }
+              { id: '4:6', name: '长图', width: 'w-7', height: 'h-10' },
+              { id: '3:4', name: '竖版', width: 'w-7.5', height: 'h-10' },
+              { id: '9:16', name: '全面屏', width: 'w-6', height: 'h-10' },
+              { id: '16:9', name: '横幅', width: 'w-10', height: 'h-6' },
+              { id: 'custom', name: '自定义', width: 'w-8', height: 'h-8' }
             ].map((ratio) => (
               <div 
                 key={ratio.id}
-                onClick={() => onCardRatioChange(ratio.id)}
+                onClick={() => handleRatioChange(ratio.id)}
                 className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div 
                   className={`${ratio.width} ${ratio.height} border-2 rounded-md ${
-                    cardRatio === ratio.id
+                    cardRatio.startsWith(ratio.id)
                       ? 'border-redbook'
                       : 'border-gray-300'
                   }`}
@@ -113,6 +137,50 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({
               </div>
             ))}
           </div>
+          
+          {showCustom && (
+            <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+              <p className="text-sm text-text-medium mb-2">自定义宽高比例</p>
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">
+                  <label className="text-xs text-text-medium mb-1 block">宽度</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={customWidth}
+                    onChange={(e) => setCustomWidth(e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded text-sm"
+                    placeholder="例如：4"
+                  />
+                </div>
+                <div className="self-end pb-1">
+                  <span className="text-text-medium">:</span>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-text-medium mb-1 block">高度</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={customHeight}
+                    onChange={(e) => setCustomHeight(e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded text-sm"
+                    placeholder="例如：5"
+                  />
+                </div>
+                <button
+                  onClick={handleCustomSizeSubmit}
+                  disabled={!customWidth || !customHeight}
+                  className={`py-1 px-2 text-sm rounded self-end ${
+                    !customWidth || !customHeight
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-redbook text-white hover:bg-red-700'
+                  }`}
+                >
+                  应用
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
