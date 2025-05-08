@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface InputFormProps {
-  onGenerate: (context: string, theme: string, description: string, imageGenerationType: string, cardStyle: string, colorTheme: string, cardRatio: string) => void;
+  onGenerate: (context: string, theme: string, description: string, imageGenerationType: string, cardStyle: string, colorTheme: string, cardRatio: string, fontFamily: string, fontSize: string) => void;
   isLoading: boolean;
 }
 
@@ -13,10 +13,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const [cardStyle, setCardStyle] = useState('standard');
   const [colorTheme, setColorTheme] = useState('redbook');
   const [cardRatio, setCardRatio] = useState('4:5');
+  const [fontFamily, setFontFamily] = useState('sans');
+  const [fontSize, setFontSize] = useState('md');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(context, theme, description, imageGenerationType, cardStyle, colorTheme, cardRatio);
+    onGenerate(context, theme, description, imageGenerationType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize);
   };
 
   return (
@@ -102,7 +104,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label htmlFor="cardStyle" className="block mb-2 text-text-dark">
               卡片排布风格
@@ -142,6 +144,48 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
               <option value="elegant">高级灰</option>
               <option value="dark">暗黑模式</option>
               <option value="gradient">柔和渐变</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label htmlFor="fontFamily" className="block mb-2 text-text-dark">
+              文字字体
+            </label>
+            <select
+              id="fontFamily"
+              value={fontFamily}
+              onChange={(e) => setFontFamily(e.target.value)}
+              className="input-field"
+              required
+            >
+              <option value="sans">无衬线体</option>
+              <option value="serif">衬线体</option>
+              <option value="mono">等宽体</option>
+              <option value="rounded">圆角体</option>
+              <option value="cursive">手写体</option>
+              <option value="fangsong">仿宋体</option>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="fontSize" className="block mb-2 text-text-dark">
+              字体大小
+            </label>
+            <select
+              id="fontSize"
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="input-field"
+              required
+            >
+              <option value="xs">超小</option>
+              <option value="sm">小</option>
+              <option value="md">中</option>
+              <option value="lg">大</option>
+              <option value="xl">超大</option>
+              <option value="2xl">特大</option>
             </select>
           </div>
         </div>

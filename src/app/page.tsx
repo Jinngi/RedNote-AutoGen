@@ -31,6 +31,8 @@ export default function Home() {
   const [currentCardStyle, setCurrentCardStyle] = useState('default');
   const [currentColorTheme, setCurrentColorTheme] = useState('redbook');
   const [currentCardRatio, setCurrentCardRatio] = useState('4:5');
+  const [currentFontFamily, setCurrentFontFamily] = useState('sans');
+  const [currentFontSize, setCurrentFontSize] = useState('md');
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isElectron, setIsElectron] = useState(false);
@@ -222,7 +224,9 @@ export default function Home() {
     imageGenerationType: string,
     cardStyle: string,
     colorTheme: string,
-    cardRatio: string
+    cardRatio: string,
+    fontFamily: string,
+    fontSize: string
   ) => {
     setIsLoading(true);
     logger.info('开始生成内容...');
@@ -234,6 +238,8 @@ export default function Home() {
       setCurrentCardStyle(cardStyle);
       setCurrentColorTheme(colorTheme);
       setCurrentCardRatio(cardRatio);
+      setCurrentFontFamily(fontFamily);
+      setCurrentFontSize(fontSize);
       setHasGeneratedContent(true);
       setShowExample(false); // 隐藏示例
       // 重置当前卡片索引
@@ -278,6 +284,18 @@ export default function Home() {
 
   const handleCardRatioChange = (ratio: string) => {
     setCurrentCardRatio(ratio);
+  };
+
+  // 处理字体家族变更
+  const handleFontFamilyChange = (font: string) => {
+    setCurrentFontFamily(font);
+    logger.info(`字体已更改为：${font}`);
+  };
+
+  // 处理字体大小变更
+  const handleFontSizeChange = (size: string) => {
+    setCurrentFontSize(size);
+    logger.info(`字体大小已更改为：${size}`);
   };
 
   // 处理下一个卡片
@@ -643,6 +661,8 @@ export default function Home() {
                 cardStyle={currentCardStyle}
                 colorTheme={currentColorTheme}
                 cardRatio={currentCardRatio}
+                fontFamily={currentFontFamily}
+                fontSize={currentFontSize}
                 onDownload={handleDownload}
                 onContentUpdate={handleContentUpdate}
                 isGeneratingImage={isGeneratingImage}
@@ -662,6 +682,8 @@ export default function Home() {
             cardStyle={currentCardStyle}
             colorTheme={currentColorTheme}
             cardRatio={currentCardRatio}
+            fontFamily={currentFontFamily}
+            fontSize={currentFontSize}
             onDownload={handleDownload}
             onContentUpdate={handleContentUpdate}
           />
@@ -712,7 +734,19 @@ export default function Home() {
             {/* 输入表单 */}
             <div className="flex-1 overflow-auto">
               <InputForm 
-                onGenerate={handleGenerate} 
+                onGenerate={(context, theme, description, imageType) => 
+                  handleGenerate(
+                    context, 
+                    theme, 
+                    description, 
+                    imageType, 
+                    currentCardStyle, 
+                    currentColorTheme, 
+                    currentCardRatio,
+                    currentFontFamily,
+                    currentFontSize
+                  )
+                } 
                 isLoading={isLoading} 
               />
               
@@ -723,9 +757,13 @@ export default function Home() {
                     cardStyle={currentCardStyle}
                     colorTheme={currentColorTheme}
                     cardRatio={currentCardRatio}
+                    fontFamily={currentFontFamily}
+                    fontSize={currentFontSize}
                     onStyleChange={handleStyleChange}
                     onColorThemeChange={handleColorThemeChange}
                     onCardRatioChange={handleCardRatioChange}
+                    onFontFamilyChange={handleFontFamilyChange}
+                    onFontSizeChange={handleFontSizeChange}
                   />
                 </div>
               )}

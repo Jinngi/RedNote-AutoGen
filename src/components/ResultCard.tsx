@@ -12,6 +12,8 @@ interface ResultCardProps {
   cardStyle: string;
   colorTheme: string;
   cardRatio: string;
+  fontFamily: string;
+  fontSize: string;
   onDownload: (id: string) => void;
   onContentUpdate?: (id: string, newContent: string) => void;
   isGeneratingImage?: boolean;
@@ -27,6 +29,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
   cardStyle,
   colorTheme,
   cardRatio,
+  fontFamily,
+  fontSize,
   onDownload,
   onContentUpdate,
   isGeneratingImage = false,
@@ -53,6 +57,46 @@ const ResultCard: React.FC<ResultCardProps> = ({
   };
   
   const { title, body, tags } = parseContent();
+
+  // 获取字体样式
+  const getFontFamily = () => {
+    switch (fontFamily) {
+      case 'sans':
+        return 'system-ui, -apple-system, sans-serif';
+      case 'serif':
+        return 'Georgia, serif';
+      case 'mono':
+        return 'Menlo, monospace';
+      case 'rounded':
+        return 'ui-rounded, "Hiragino Maru Gothic ProN", sans-serif';
+      case 'cursive':
+        return 'cursive';
+      case 'fangsong':
+        return 'fangsong, 仿宋, FangSong, STFangSong';
+      default:
+        return 'system-ui, -apple-system, sans-serif';
+    }
+  };
+
+  // 获取字体大小
+  const getFontSize = () => {
+    switch (fontSize) {
+      case 'xs':
+        return { title: '16px', body: '12px', tag: '10px' };
+      case 'sm':
+        return { title: '18px', body: '14px', tag: '12px' };
+      case 'md':
+        return { title: '20px', body: '16px', tag: '14px' };
+      case 'lg':
+        return { title: '22px', body: '18px', tag: '16px' };
+      case 'xl':
+        return { title: '24px', body: '20px', tag: '18px' };
+      case '2xl':
+        return { title: '28px', body: '24px', tag: '20px' };
+      default:
+        return { title: '20px', body: '16px', tag: '14px' };
+    }
+  };
 
   // 获取卡片比例样式
   const getRatioStyle = () => {
@@ -205,6 +249,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
   };
 
   const colors = getThemeColors();
+  const fontStyleFamily = getFontFamily();
+  const fontSizeStyles = getFontSize();
 
   const handleDownload = async () => {
     if (imageUrl) {
@@ -426,9 +472,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 渲染Markdown内容，使用更简单的方式
   const renderMarkdownContent = (text: string, additionalClassName?: string, customStyle?: React.CSSProperties) => {
+    // 合并传入的样式与字体样式
+    const combinedStyle = {
+      ...customStyle,
+      fontFamily: fontStyleFamily,
+      fontSize: fontSizeStyles.body
+    };
+    
     // 使用div包装ReactMarkdown，并应用样式到div上
     return (
-      <div className={`markdown-content ${additionalClassName || ""}`} style={customStyle}>
+      <div className={`markdown-content ${additionalClassName || ""}`} style={combinedStyle}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {text}
         </ReactMarkdown>
@@ -453,7 +506,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
             style={{
               minHeight: '200px',
               height: 'auto',
-              resize: 'vertical' // 允许用户垂直调整大小
+              resize: 'vertical', // 允许用户垂直调整大小
+              fontFamily: fontStyleFamily,
+              fontSize: fontSizeStyles.body
             }}
           />
         </div>
@@ -468,7 +523,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
             backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
             color: colors.text,
             height: '100%',
-            minHeight: '200px'
+            minHeight: '200px',
+            fontFamily: fontStyleFamily
           }}>
             {!isTextOnly && (
               <div className="md:w-1/2 overflow-hidden h-full relative" style={{ 
@@ -480,7 +536,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </div>
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
-              <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
+              <h3 className="text-xl font-bold mb-4" style={{ 
+                color: colors.primary,
+                fontFamily: fontStyleFamily,
+                fontSize: fontSizeStyles.title
+              }}>{title}</h3>
               <div className="mb-6 flex-grow">
                 {renderMarkdownContent(body)}
               </div>
@@ -488,10 +548,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 {tags.map((tag, index) => (
                   <span 
                     key={index} 
-                    className="inline-block px-3 py-1 rounded-full text-sm" 
+                    className="inline-block px-3 py-1 rounded-full" 
                     style={{ 
                       backgroundColor: colors.secondary,
-                      color: colors.primary 
+                      color: colors.primary,
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.tag
                     }}
                   >
                     {tag}
@@ -510,7 +572,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
               height: '100%',
-              minHeight: '200px'
+              minHeight: '200px',
+              fontFamily: fontStyleFamily
             }}
           >
             {!isTextOnly && (
@@ -523,7 +586,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </div>
             )}
             <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
-              <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
+              <h3 className="text-xl font-bold mb-4" style={{ 
+                color: colors.primary,
+                fontFamily: fontStyleFamily,
+                fontSize: fontSizeStyles.title
+              }}>{title}</h3>
               <div className="mb-6 flex-grow">
                 {renderMarkdownContent(body)}
               </div>
@@ -531,10 +598,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 {tags.map((tag, index) => (
                   <span 
                     key={index} 
-                    className="inline-block px-3 py-1 rounded-full text-sm" 
+                    className="inline-block px-3 py-1 rounded-full" 
                     style={{ 
                       backgroundColor: colors.secondary,
-                      color: colors.primary 
+                      color: colors.primary,
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.tag
                     }}
                   >
                     {tag}
@@ -553,7 +622,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               height: '100%',
               minHeight: '200px',
-              aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+              aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
+              fontFamily: fontStyleFamily
             }}
           >
             {!isTextOnly && renderImageContent({ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 })}
@@ -564,7 +634,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   ? (colorTheme === 'gradient' ? colors.background : colors.secondary)
                   : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
                 zIndex: 10,
-                height: '100%'
+                height: '100%',
+                fontFamily: fontStyleFamily
               }}
             >
               <div className="flex-grow"></div>
@@ -573,7 +644,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   className="text-xl font-bold mb-4" 
                   style={{ 
                     color: isTextOnly ? colors.primary : '#fff',
-                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)' // 添加文字阴影提高可读性
+                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
+                    fontFamily: fontStyleFamily,
+                    fontSize: fontSizeStyles.title
                   }}
                 >
                   {title}
@@ -582,17 +655,21 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   {renderMarkdownContent(body, "", { 
                     color: isTextOnly ? colors.text : '#fff',
                     textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
+                    fontFamily: fontStyleFamily,
+                    fontSize: fontSizeStyles.body
                   })}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag, index) => (
                     <span 
                       key={index} 
-                      className="inline-block px-3 py-1 rounded-full text-sm" 
+                      className="inline-block px-3 py-1 rounded-full" 
                       style={{ 
                         backgroundColor: 'rgba(255,255,255,0.3)',
                         color: isTextOnly ? colors.primary : '#fff',
-                        textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.5)'
+                        textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.5)',
+                        fontFamily: fontStyleFamily,
+                        fontSize: fontSizeStyles.tag
                       }}
                     >
                       {tag}
@@ -612,22 +689,28 @@ const ResultCard: React.FC<ResultCardProps> = ({
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
               height: '100%',
-              gridTemplateRows: 'auto 1fr auto'
+              gridTemplateRows: 'auto 1fr auto',
+              fontFamily: fontStyleFamily
             }}
           >
             <div className="col-span-2">
-              <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
+              <h3 className="text-xl font-bold mb-4" style={{ 
+                color: colors.primary,
+                fontFamily: fontStyleFamily,
+                fontSize: fontSizeStyles.title
+              }}>{title}</h3>
             </div>
             
             {!isTextOnly && (
               <div className="overflow-hidden rounded-lg h-full" style={{ 
-                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
+                fontFamily: fontStyleFamily
               }}>
                 {renderImageContent()}
               </div>
             )}
             
-            <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col overflow-auto h-full`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem' }}>
+            <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col overflow-auto h-full`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem', fontFamily: fontStyleFamily }}>
               <div className="text-sm mb-4 flex-grow">
                 {renderMarkdownContent(body, "text-sm")}
               </div>
@@ -636,7 +719,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   <span 
                     key={index} 
                     className="inline-block px-2 py-1 rounded-full text-xs" 
-                    style={{ backgroundColor: colors.primary, color: '#fff' }}
+                    style={{ 
+                      backgroundColor: colors.primary,
+                      color: '#fff',
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.tag
+                    }}
                   >
                     {tag}
                   </span>
@@ -649,10 +737,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 {tags.slice(3).map((tag, index) => (
                   <span 
                     key={index} 
-                    className="inline-block px-3 py-1 rounded-full text-sm" 
+                    className="inline-block px-3 py-1 rounded-full" 
                     style={{ 
                       backgroundColor: colors.secondary,
-                      color: colors.primary 
+                      color: colors.primary,
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.tag
                     }}
                   >
                     {tag}
@@ -670,12 +760,17 @@ const ResultCard: React.FC<ResultCardProps> = ({
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%'
+              height: '100%',
+              fontFamily: fontStyleFamily
             }}
           >
             <div className="p-6 relative flex-grow flex flex-col h-full">
               <div className="border-b pb-3 mb-6" style={{ borderColor: colors.primary }}>
-                <h3 className="text-2xl font-bold" style={{ color: colors.primary }}>{title}</h3>
+                <h3 className="text-2xl font-bold" style={{ 
+                  color: colors.primary,
+                  fontFamily: fontStyleFamily,
+                  fontSize: fontSizeStyles.title
+                }}>{title}</h3>
               </div>
               
               <div className="flex flex-col md:flex-row gap-6 flex-grow overflow-auto">
@@ -686,7 +781,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
                       style={{ 
                         borderColor: colors.primary, 
                         borderWidth: '1px',
-                        aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
+                        aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
+                        fontFamily: fontStyleFamily
                       }}
                     >
                       {renderImageContent()}
@@ -698,7 +794,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
                   <div 
                     className="markdown-container mb-6 flex-grow"
                     style={{ 
-                      lineHeight: '1.8'
+                      lineHeight: '1.8',
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.body
                     }}
                   >
                     {renderMarkdownContent(body, "markdown-container first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2")}
@@ -708,10 +806,12 @@ const ResultCard: React.FC<ResultCardProps> = ({
                     {tags.map((tag, index) => (
                       <span 
                         key={index} 
-                        className="inline-block px-3 py-1 rounded-md text-sm" 
+                        className="inline-block px-3 py-1 rounded-md" 
                         style={{ 
                           backgroundColor: colors.secondary,
-                          color: colors.primary 
+                          color: colors.primary,
+                          fontFamily: fontStyleFamily,
+                          fontSize: fontSizeStyles.tag
                         }}
                       >
                         {tag}
@@ -733,21 +833,28 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 ? colors.background 
                 : (colorTheme === 'dark' ? colors.background : '#fff'),
               color: colors.text,
-              height: '100%'
+              height: '100%',
+              fontFamily: fontStyleFamily
             }}
           >
-            <h3 className="text-2xl font-bold mb-6" style={{ color: colors.primary }}>{title}</h3>
-            <div className="mb-8 text-lg flex-grow" style={{ lineHeight: '1.8' }}>
+            <h3 className="text-2xl font-bold mb-6" style={{ 
+              color: colors.primary,
+              fontFamily: fontStyleFamily,
+              fontSize: fontSizeStyles.title
+            }}>{title}</h3>
+            <div className="mb-8 text-lg flex-grow" style={{ lineHeight: '1.8', fontFamily: fontStyleFamily, fontSize: fontSizeStyles.body }}>
               {renderMarkdownContent(body, "text-lg")}
             </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag, index) => (
                 <span 
                   key={index} 
-                  className="inline-block px-3 py-1 rounded-full text-sm" 
+                  className="inline-block px-3 py-1 rounded-full" 
                   style={{ 
                     backgroundColor: colors.secondary,
-                    color: colors.primary 
+                    color: colors.primary,
+                    fontFamily: fontStyleFamily,
+                    fontSize: fontSizeStyles.tag
                   }}
                 >
                   {tag}
@@ -766,30 +873,54 @@ const ResultCard: React.FC<ResultCardProps> = ({
             style={{ 
               backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
               color: colors.text,
-              height: '100%'
+              height: '100%',
+              minHeight: '200px',
+              fontFamily: fontStyleFamily
             }}
           >
             {!isTextOnly && (
-              <div className="w-full relative" style={{ 
-                height: '60%', // 将图片高度限制为卡片的60%
-                maxHeight: '250px' // 添加最大高度限制
-              }}>
+              <div 
+                className="w-full overflow-hidden relative flex-shrink-0" 
+                style={{ 
+                  height: '60%',
+                  minHeight: '150px',
+                  maxHeight: '60%'
+                }}
+              >
                 {renderImageContent()}
               </div>
             )}
-            <div className="p-6 flex-grow overflow-auto">
-              <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>{title}</h3>
-              <div className="mb-6">
+            <div 
+              className="p-6 flex flex-col flex-grow overflow-auto" 
+              style={{ 
+                height: isTextOnly ? '100%' : '40%',
+                minHeight: '150px',
+                maxHeight: isTextOnly ? '100%' : '40%'
+              }}
+            >
+              <h3 
+                className="text-xl font-bold mb-4" 
+                style={{ 
+                  color: colors.primary,
+                  fontFamily: fontStyleFamily, 
+                  fontSize: fontSizeStyles.title
+                }}
+              >
+                {title}
+              </h3>
+              <div className="mb-6 flex-grow">
                 {renderMarkdownContent(body)}
               </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
                   <span 
                     key={index} 
-                    className="inline-block px-3 py-1 rounded-full text-sm" 
+                    className="inline-block px-3 py-1 rounded-full" 
                     style={{ 
                       backgroundColor: colors.secondary,
-                      color: colors.primary 
+                      color: colors.primary,
+                      fontFamily: fontStyleFamily,
+                      fontSize: fontSizeStyles.tag
                     }}
                   >
                     {tag}
@@ -827,7 +958,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
         className="bg-white rounded-lg border border-gray-200 shadow-md h-full"
         style={{ 
           ...getRatioStyle(), // 应用比例样式
-          minHeight: '200px'
+          minHeight: '200px',
+          fontFamily: fontStyleFamily
         }}
       >
         {renderCardContent()}

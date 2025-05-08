@@ -4,18 +4,26 @@ interface StyleSelectorProps {
   cardStyle: string;
   colorTheme: string;
   cardRatio: string;
+  fontFamily: string;
+  fontSize: string;
   onStyleChange: (style: string) => void;
   onColorThemeChange: (theme: string) => void;
   onCardRatioChange: (ratio: string) => void;
+  onFontFamilyChange: (font: string) => void;
+  onFontSizeChange: (size: string) => void;
 }
 
 const StyleSelector: React.FC<StyleSelectorProps> = ({
   cardStyle,
   colorTheme,
   cardRatio,
+  fontFamily,
+  fontSize,
   onStyleChange,
   onColorThemeChange,
-  onCardRatioChange
+  onCardRatioChange,
+  onFontFamilyChange,
+  onFontSizeChange
 }) => {
   const [customWidth, setCustomWidth] = useState('');
   const [customHeight, setCustomHeight] = useState('');
@@ -181,6 +189,66 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* 字体选择部分 */}
+        <div>
+          <label className="block mb-2 text-text-dark text-sm">
+            文字字体
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: 'sans', name: '无衬线体', family: 'system-ui, -apple-system, sans-serif' },
+              { id: 'serif', name: '衬线体', family: 'Georgia, serif' },
+              { id: 'mono', name: '等宽体', family: 'Menlo, monospace' },
+              { id: 'rounded', name: '圆角体', family: 'ui-rounded, "Hiragino Maru Gothic ProN", sans-serif' },
+              { id: 'cursive', name: '手写体', family: 'cursive' },
+              { id: 'fangsong', name: '仿宋体', family: 'fangsong, 仿宋, FangSong, STFangSong' }
+            ].map((font) => (
+              <button
+                key={font.id}
+                onClick={() => onFontFamilyChange(font.id)}
+                style={{ fontFamily: font.family }}
+                className={`py-2 px-3 text-sm rounded-md transition-colors ${
+                  fontFamily === font.id
+                    ? 'bg-redbook text-white'
+                    : 'bg-gray-100 text-text-medium hover:bg-gray-200'
+                }`}
+              >
+                {font.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 字体大小选择部分 */}
+        <div>
+          <label className="block mb-2 text-text-dark text-sm">
+            字体大小
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'xs', name: '超小', size: '12px' },
+              { id: 'sm', name: '小', size: '14px' },
+              { id: 'md', name: '中', size: '16px' },
+              { id: 'lg', name: '大', size: '18px' },
+              { id: 'xl', name: '超大', size: '20px' },
+              { id: '2xl', name: '特大', size: '24px' }
+            ].map((size) => (
+              <button
+                key={size.id}
+                onClick={() => onFontSizeChange(size.id)}
+                style={{ fontSize: size.size }}
+                className={`py-2 px-3 rounded-md transition-colors ${
+                  fontSize === size.id
+                    ? 'bg-redbook text-white'
+                    : 'bg-gray-100 text-text-medium hover:bg-gray-200'
+                }`}
+              >
+                {size.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
