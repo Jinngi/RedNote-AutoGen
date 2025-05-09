@@ -289,17 +289,19 @@ export async function getImageTaskResult(taskId: string): Promise<string> {
  * @param theme 主题
  * @param description 文案描述
  * @param imageGenerationType 图片生成方式 ('random' | 'web' | 'none')
+ * @param contentMode 文案模式 ('original' | 'polish' | 'concise' | 'detailed')
  * @returns 生成的结果
  */
 export async function generateContent(
   context: string,
   theme: string,
   description: string,
-  imageGenerationType: string = 'random'
+  imageGenerationType: string = 'random',
+  contentMode: string = 'detailed'
 ): Promise<GenerateResult[]> {
   try {
     logger.info('开始生成内容...');
-    logger.info(`参数: 主题="${theme}", 图片生成方式="${imageGenerationType}"`);
+    logger.info(`参数: 主题="${theme}", 图片生成方式="${imageGenerationType}", 文案模式="${contentMode}"`);
     
     // 获取环境变量
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -311,35 +313,116 @@ export async function generateContent(
       throw new Error('API配置缺失，请检查环境变量');
     }
 
-    // 构建发送给LLM的提示词
-    const prompt = `
-    请你帮我生成三篇小红书风格的文案，每篇文案之间用三个连续的星号 *** 分隔。
-        
-    要求：
-    1. 每篇文案需要包含标题、正文、标签
-    2. 标题吸引人，突出主题
-    3. 正文内容丰富，符合小红书风格，语言生动活泼
-    4. 标签使用井号(#)开头，至少包含3个标签
-    5. 总体文字在200-500字之间
-    6. 文字要活泼，有emoji表情
-    7. 三篇要逐步递进的讨论，内容要不同，但需要前后关联，逐步递进
-    8. 要多换行，不要全部堆在一起，换行需要加入换行符
-    
-    【主题】
-    ${theme}
-    
-    【上下文】
-    ${context}
-    
-    【描述】
-    ${description}
+    // 原始文案模式直接使用输入内容，不调用LLM
+    if (contentMode === 'original') {
+      logger.info('使用原始文案模式，跳过LLM调用');
+      
+      // 构建结果数组
+      const results: GenerateResult[] = [];
+      
+      const content = `${theme}\n\n${context}\n\n${description}`;
+      let imageUrl = '';
+      
+      // 根据图片生成方式获取图片
+      if (imageGenerationType === 'none') {
+        logger.info('无图模式，跳过图片生成');
+        imageUrl = '';
+      } else if (imageGenerationType === 'web') {
+        logger.info('使用Web搜索模式生成图片');
+        imageUrl = await searchImage(content);
+      } else {
+        logger.info('使用随机图片模式');
+        imageUrl = getRandomImage();
+      }
+      
+      const id = `${Date.now()}-original`;
+      results.push({
+        id,
+        content,
+        imageUrl,
+      });
+      
+      logger.success(`原始文案模式处理完成(ID: ${id})`);
+      return results;
+    }
 
-    `;
+    // 构建不同文案模式的提示词
+    let prompt = '';
+    
+    if (contentMode === 'polish') {
+      // 原始文案仅润色为小红书文风
+      prompt = `
+      请你帮我将以下文案润色为小红书风格，保持原有内容不变，但使其更符合小红书的风格特点。
+      
+      要求：
+      1. 不改变原文的主要内容和结构
+      2. 增加emoji表情，让文案更活泼
+      3. 适当增加一些小红书常用的表达方式
+      4. 调整排版，增加适当的换行，使文案更易读
+      5. 如果原文未包含标签，请在文末添加3-5个与内容相关的标签，标签格式为 #标签内容
+      
+      【原始文案】
+      标题：${theme}
+      
+      正文：
+      ${context}
+      
+      附加说明：
+      ${description}
+      `;
+    } else if (contentMode === 'concise') {
+      // 精简编写模式
+      prompt = `
+      请你帮我生成一篇小红书风格的精简文案。
+          
+      要求：
+      1. 文案需要包含标题、正文、标签
+      2. 标题吸引人，突出主题
+      3. 正文内容简洁明了，突出重点，符合小红书风格
+      4. 标签使用井号(#)开头，包含3-5个标签
+      5. 总体文字在100-300字之间
+      6. 文字要活泼，有emoji表情
+      7. 要考虑换行，不要全部堆在一起
+      
+      【主题】
+      ${theme}
+      
+      【上下文】
+      ${context}
+      
+      【描述】
+      ${description}
+      `;
+    } else {
+      // 详细编写模式（默认模式）
+      prompt = `
+      请你帮我生成三篇小红书风格的文案，每篇文案之间用三个连续的星号 *** 分隔。
+          
+      要求：
+      1. 每篇文案需要包含标题、正文、标签
+      2. 标题吸引人，突出主题
+      3. 正文内容丰富，符合小红书风格，语言生动活泼
+      4. 标签使用井号(#)开头，至少包含3个标签
+      5. 总体文字在200-500字之间
+      6. 文字要活泼，有emoji表情
+      7. 三篇要逐步递进的讨论，内容要不同，但需要前后关联，逐步递进
+      8. 要考虑换行，不要全部堆在一起
+      
+      【主题】
+      ${theme}
+      
+      【上下文】
+      ${context}
+      
+      【描述】
+      ${description}
+      `;
+    }
 
     logger.info(`使用模型: ${llmModel}`);
     logger.info('发送API请求...');
 
-    // 调用LLM API
+    // 调用LLM API（除了原始文案模式外的所有模式）
     const response = await fetch(`${apiBaseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -371,8 +454,11 @@ export async function generateContent(
     // 解析LLM返回的内容
     const generatedText: string = responseData.choices[0]?.message?.content || '';
     
-    // 按照分隔符拆分成多篇文案
-    const contentParts: string[] = generatedText.split('***').filter((part: string) => part.trim().length > 0);
+    // 按照分隔符拆分成多篇文案（仅详细模式会有多篇）
+    const contentParts: string[] = contentMode === 'detailed' 
+      ? generatedText.split('***').filter((part: string) => part.trim().length > 0)
+      : [generatedText];
+      
     logger.info(`成功生成 ${contentParts.length} 篇文案`);
     
     // 生成结果数组

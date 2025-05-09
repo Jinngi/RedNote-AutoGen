@@ -103,6 +103,25 @@ yarn start
 pnpm start
 ```
 
+### 后台服务 | backserver
+#### OneClickFluxGen-极简AI图像生成服务
+
+项目中的AI生图需要启动对应的后台服务，
+
+基于FLUX模型的高性能AI图像生成后台服务，提供REST API接口生成图像。
+
+https://github.com/xdrshjr/OneClickFluxGen
+
+##### 特性
+
+- 基于FastAPI构建的高性能REST API
+- 支持FLUX模型及LORA模型加载
+- 通过配置文件动态配置服务参数
+- 一键启动脚本支持（Windows和Linux/macOS）
+- 提供API测试和健康检查
+- 支持同步和异步图像生成
+- 任务管理与进度追踪
+
 ## 项目结构 | Project Structure
 
 ```

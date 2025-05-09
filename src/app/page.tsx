@@ -229,35 +229,29 @@ export default function Home() {
     colorTheme: string,
     cardRatio: string,
     fontFamily: string,
-    fontSize: string
+    fontSize: string,
+    contentMode: string
   ) => {
-    setIsLoading(true);
-    logger.info('开始生成内容...');
     try {
-      logger.info(`生成参数: 上下文=${context}, 主题=${theme}, 描述=${description}, 图片生成类型=${imageGenerationType}`);
-      const generatedResults = await generateContent(context, theme, description, imageGenerationType);
-      setResults(generatedResults);
-      setDownloadedIds([]);
+      setIsLoading(true);
+      setCurrentCardIndex(0);
+      setShowExample(false);
       setCurrentCardStyle(cardStyle);
       setCurrentColorTheme(colorTheme);
       setCurrentCardRatio(cardRatio);
       setCurrentFontFamily(fontFamily);
       setCurrentFontSize(fontSize);
+      logger.info('开始生成内容...');
+      logger.info(`主题: ${theme}, 文案模式: ${contentMode}`);
+
+      // 调用API生成内容
+      const generatedResults = await generateContent(context, theme, description, imageGenerationType, contentMode);
+      setResults(generatedResults);
       setHasGeneratedContent(true);
-      setShowExample(false); // 隐藏示例
-      // 重置当前卡片索引
-      setCurrentCardIndex(0);
-      // 重置图像生成状态
-      setIsGeneratingImage(false);
-      setImageTaskId(null);
-      if (imagePollingRef.current) {
-        clearTimeout(imagePollingRef.current);
-      }
-      logger.success(`成功生成 ${generatedResults.length} 个内容`);
+      logger.success(`内容生成成功，生成了 ${generatedResults.length} 个结果`);
     } catch (error) {
       console.error('生成内容时出错:', error);
-      logger.error(`生成内容失败: ${error instanceof Error ? error.message : String(error)}`);
-      // 这里可以添加错误提示UI
+      logger.error(`内容生成失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
@@ -783,17 +777,18 @@ export default function Home() {
             {/* 输入表单 */}
             <div className="flex-1 overflow-auto">
               <InputForm 
-                onGenerate={(context, theme, description, imageType) => 
+                onGenerate={(context, theme, description, imageType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize, contentMode) => 
                   handleGenerate(
                     context, 
                     theme, 
                     description, 
                     imageType, 
-                    currentCardStyle, 
-                    currentColorTheme, 
-                    currentCardRatio,
-                    currentFontFamily,
-                    currentFontSize
+                    cardStyle, 
+                    colorTheme, 
+                    cardRatio,
+                    fontFamily,
+                    fontSize,
+                    contentMode
                   )
                 } 
                 isLoading={isLoading} 

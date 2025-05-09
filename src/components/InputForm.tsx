@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface InputFormProps {
-  onGenerate: (context: string, theme: string, description: string, imageGenerationType: string, cardStyle: string, colorTheme: string, cardRatio: string, fontFamily: string, fontSize: string) => void;
+  onGenerate: (context: string, theme: string, description: string, imageGenerationType: string, cardStyle: string, colorTheme: string, cardRatio: string, fontFamily: string, fontSize: string, contentMode: string) => void;
   isLoading: boolean;
 }
 
@@ -15,10 +15,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const [cardRatio, setCardRatio] = useState('4:5');
   const [fontFamily, setFontFamily] = useState('sans');
   const [fontSize, setFontSize] = useState('md');
+  const [contentMode, setContentMode] = useState('detailed');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(context, theme, description, imageGenerationType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize);
+    onGenerate(context, theme, description, imageGenerationType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize, contentMode);
   };
 
   return (
@@ -66,6 +67,24 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
             className="input-field h-24"
             required
           />
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="contentMode" className="block mb-2 text-text-dark">
+            文案模式
+          </label>
+          <select
+            id="contentMode"
+            value={contentMode}
+            onChange={(e) => setContentMode(e.target.value)}
+            className="input-field"
+            required
+          >
+            <option value="original">原始文案模式</option>
+            <option value="polish">原始文案（仅润色为小红书文风）</option>
+            <option value="concise">精简编写模式</option>
+            <option value="detailed">详细编写模式</option>
+          </select>
         </div>
         
         <div className="grid grid-cols-2 gap-4 mb-4">
