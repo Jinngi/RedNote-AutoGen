@@ -122,6 +122,22 @@ https://github.com/xdrshjr/OneClickFluxGen
 - 支持同步和异步图像生成
 - 任务管理与进度追踪
 
+The AI image generation in this project requires the corresponding backend service to be launched.
+
+It employs a high-performance backend service based on the FLUX model, exposing RESTful APIs for image generation:
+
+https://github.com/xdrshjr/OneClickFluxGen
+
+##### Features
+
+- High-performance REST API built with FastAPI  
+- Supports loading both FLUX and LORA models  
+- Enables dynamic service configuration via YAML files  
+- Provides one-click startup scripts for Windows and Linux/macOS  
+- Includes endpoints for API testing and health checks  
+- Supports both synchronous and asynchronous image generation  
+- Includes task management with progress tracking
+
 ## 项目结构 | Project Structure
 
 ```
