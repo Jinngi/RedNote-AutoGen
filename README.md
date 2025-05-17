@@ -83,6 +83,30 @@ pnpm dev
 
 *The server will start at http://localhost:3000*
 
+### Ubuntu一键启动（新增功能）| Ubuntu One-Click Startup (New Feature)
+
+现在可以使用一键启动脚本在Ubuntu系统上快速部署和启动项目：
+
+*Now you can use the one-click startup script to quickly deploy and start the project on Ubuntu systems:*
+
+```bash
+# 给脚本添加执行权限 | Add execution permission to the script
+chmod +x start-rednote.sh
+
+# 使用默认配置启动 | Start with default configuration
+./start-rednote.sh
+
+# 指定前端端口 | Specify frontend port
+./start-rednote.sh 4000
+
+# 指定前端端口和图像服务端口 | Specify frontend and image service ports
+./start-rednote.sh 4000 9000
+```
+
+详细说明请参考 [Ubuntu一键启动指南](README-UBUNTU.md)
+
+*For detailed instructions, please refer to [Ubuntu One-Click Startup Guide](README-UBUNTU.md)*
+
 ### 构建生产版本 | Build for Production
 
 ```bash
