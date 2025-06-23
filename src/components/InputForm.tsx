@@ -5,218 +5,173 @@ interface InputFormProps {
   isLoading: boolean;
 }
 
+interface TextStyle {
+  name: string;
+  description: string;
+  value: string;
+}
+
+const textStyles: TextStyle[] = [
+  { name: '活力青春', description: '充满朝气的年轻化表达', value: 'energetic' },
+  { name: '优雅成熟', description: '沉稳大气的专业风格', value: 'elegant' },
+  { name: '轻松幽默', description: '俏皮有趣的表达方式', value: 'humorous' },
+  { name: '文艺清新', description: '富有诗意的文艺风格', value: 'literary' },
+];
+
+const lengthOptions = [
+  { name: '短文(200字以内)', value: 200 },
+  { name: '中等(400字左右)', value: 400 },
+  { name: '长文(600字以上)', value: 600 },
+];
+
 const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const [context, setContext] = useState('');
   const [theme, setTheme] = useState('');
   const [description, setDescription] = useState('');
   const [imageGenerationType, setImageGenerationType] = useState('random');
-  const [cardStyle, setCardStyle] = useState('standard');
+  const [cardStyle, setCardStyle] = useState('text-only');
   const [colorTheme, setColorTheme] = useState('redbook');
   const [cardRatio, setCardRatio] = useState('4:5');
   const [fontFamily, setFontFamily] = useState('sans');
   const [fontSize, setFontSize] = useState('md');
   const [contentMode, setContentMode] = useState('detailed');
+  const [selectedStyle, setSelectedStyle] = useState<string>('energetic');
+  const [targetLength, setTargetLength] = useState<number>(400);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(context, theme, description, imageGenerationType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize, contentMode);
+    if (!isLoading) {
+      onGenerate(
+        context,
+        theme,
+        description,
+        imageGenerationType,
+        cardStyle,
+        colorTheme,
+        cardRatio,
+        fontFamily,
+        fontSize,
+        contentMode
+      );
+    }
   };
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-bold mb-4 text-text-dark">创建小红书文案与图片</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="context" className="block mb-2 text-text-dark">
-            上下文内容
-          </label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 主要输入区域 */}
+      <div className="space-y-4">
+        <div>
           <textarea
             id="context"
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="请输入创作的上下文内容，比如产品信息、目标受众等..."
-            className="input-field h-36"
+            placeholder="请输入你想要创作的内容..."
+            className="w-full px-4 py-3 text-base bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-black focus:bg-white transition-colors"
+            rows={4}
             required
           />
         </div>
         
-        <div className="mb-4">
-          <label htmlFor="theme" className="block mb-2 text-text-dark">
-            主题
-          </label>
+        <div className="grid grid-cols-2 gap-4">
           <input
             type="text"
             id="theme"
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
-            placeholder="输入文案主题，例如：美食、旅行、生活方式等"
-            className="input-field"
+            placeholder="主题标签"
+            className="px-4 py-2 text-sm bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-black focus:bg-white transition-colors"
             required
           />
-        </div>
-        
-        <div className="mb-4">
-          <label htmlFor="description" className="block mb-2 text-text-dark">
-            文案描述
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="描述你希望文案的风格、重点等..."
-            className="input-field h-24"
-            required
-          />
-        </div>
-        
-        <div className="mb-4">
-          <label htmlFor="contentMode" className="block mb-2 text-text-dark">
-            文案模式
-          </label>
+          
           <select
             id="contentMode"
             value={contentMode}
             onChange={(e) => setContentMode(e.target.value)}
-            className="input-field"
+            className="px-4 py-2 text-sm bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-black focus:bg-white transition-colors appearance-none"
             required
           >
-            <option value="original">原始文案模式</option>
-            <option value="polish">原始文案（仅润色为小红书文风）</option>
-            <option value="concise">精简编写模式</option>
-            <option value="detailed">详细编写模式</option>
+            <option value="original">原创</option>
+            <option value="polish">润色</option>
+            <option value="concise">简短</option>
+            <option value="detailed">详细</option>
           </select>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="imageGenerationType" className="block mb-2 text-text-dark">
-              图片生成方式
-            </label>
-            <select
-              id="imageGenerationType"
-              value={imageGenerationType}
-              onChange={(e) => setImageGenerationType(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="random">随机配图</option>
-              <option value="web">网络搜图</option>
-              <option value="none">无图模式</option>
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="cardRatio" className="block mb-2 text-text-dark">
-              卡片比例
-            </label>
-            <select
-              id="cardRatio"
-              value={cardRatio}
-              onChange={(e) => setCardRatio(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="1:1">正方形 (1:1)</option>
-              <option value="4:5">竖图 (4:5)</option>
-              <option value="4:6">长图 (4:6)</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="cardStyle" className="block mb-2 text-text-dark">
-              卡片排布风格
-            </label>
-            <select
-              id="cardStyle"
-              value={cardStyle}
-              onChange={(e) => setCardStyle(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="standard">标准布局</option>
-              <option value="left-image">左图右文</option>
-              <option value="right-image">右图左文</option>
-              <option value="overlay">卡片叠加</option>
-              <option value="collage">拼贴风格</option>
-              <option value="magazine">杂志风格</option>
-              <option value="text-only">无图纯文</option>
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="colorTheme" className="block mb-2 text-text-dark">
-              配色风格
-            </label>
-            <select
-              id="colorTheme"
-              value={colorTheme}
-              onChange={(e) => setColorTheme(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="redbook">小红书粉</option>
-              <option value="nature">自然绿</option>
-              <option value="ocean">海洋蓝</option>
-              <option value="sunset">日落橙</option>
-              <option value="elegant">高级灰</option>
-              <option value="dark">暗黑模式</option>
-              <option value="gradient">柔和渐变</option>
-            </select>
+
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="描述你希望的文案风格..."
+          className="w-full px-4 py-3 text-sm bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-black focus:bg-white transition-colors"
+          rows={2}
+          required
+        />
+
+        {/* 隐藏的必要字段 */}
+        <input type="hidden" name="imageGenerationType" value={imageGenerationType} />
+        <input type="hidden" name="cardStyle" value={cardStyle} />
+        <input type="hidden" name="colorTheme" value={colorTheme} />
+        <input type="hidden" name="cardRatio" value={cardRatio} />
+        <input type="hidden" name="fontFamily" value={fontFamily} />
+        <input type="hidden" name="fontSize" value={fontSize} />
+
+        {/* 字数选择 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            文章长度
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {lengthOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setTargetLength(option.value)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition duration-200 ${
+                  targetLength === option.value
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {option.name}
+              </button>
+            ))}
           </div>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <label htmlFor="fontFamily" className="block mb-2 text-text-dark">
-              文字字体
-            </label>
-            <select
-              id="fontFamily"
-              value={fontFamily}
-              onChange={(e) => setFontFamily(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="sans">无衬线体</option>
-              <option value="serif">衬线体</option>
-              <option value="mono">等宽体</option>
-              <option value="rounded">圆角体</option>
-              <option value="cursive">手写体</option>
-              <option value="fangsong">仿宋体</option>
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="fontSize" className="block mb-2 text-text-dark">
-              字体大小
-            </label>
-            <select
-              id="fontSize"
-              value={fontSize}
-              onChange={(e) => setFontSize(e.target.value)}
-              className="input-field"
-              required
-            >
-              <option value="xs">超小</option>
-              <option value="sm">小</option>
-              <option value="md">中</option>
-              <option value="lg">大</option>
-              <option value="xl">超大</option>
-              <option value="2xl">特大</option>
-            </select>
+
+        {/* 文字风格选择 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            文字风格
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {textStyles.map((style) => (
+              <button
+                key={style.value}
+                type="button"
+                onClick={() => setSelectedStyle(style.value)}
+                className={`flex flex-col items-start p-4 rounded-xl transition duration-200 ${
+                  selectedStyle === style.value
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <span className="font-medium">{style.name}</span>
+                <span className="text-sm opacity-80 mt-1">{style.description}</span>
+              </button>
+            ))}
           </div>
         </div>
-        
-        <button
-          type="submit"
-          className="hidden"
-        >
-          提交
-        </button>
-      </form>
-    </div>
+      </div>
+
+      {/* 提交按钮 */}
+      <button 
+        type="submit"
+        className="hidden"
+        disabled={isLoading}
+      >
+        提交
+      </button>
+    </form>
   );
 };
 

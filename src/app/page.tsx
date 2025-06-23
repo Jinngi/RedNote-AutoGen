@@ -767,125 +767,185 @@ export default function Home() {
     : "container mx-auto px-2 py-4 flex-1 overflow-hidden flex flex-col";
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
       
-      <div className={containerClassName}>
-        <div className="flex flex-col md:flex-row gap-2 flex-1 overflow-hidden">
-          {/* 左侧区域 */}
-          <div className="w-full md:w-1/3 flex flex-col space-y-4 md:overflow-auto">
-            {/* 输入表单 */}
-            <div className="flex-1 overflow-auto">
-              <InputForm 
-                onGenerate={(context, theme, description, imageType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize, contentMode) => 
-                  handleGenerate(
-                    context, 
-                    theme, 
-                    description, 
-                    imageType, 
-                    cardStyle, 
-                    colorTheme, 
-                    cardRatio,
-                    fontFamily,
-                    fontSize,
-                    contentMode
-                  )
-                } 
-                isLoading={isLoading} 
-              />
-              
-              {/* 样式选择器（仅当有结果时显示） */}
-              {showStyleSelector && (
-                <div className="mt-4">
-                  <StyleSelector
-                    cardStyle={currentCardStyle}
-                    colorTheme={currentColorTheme}
-                    cardRatio={currentCardRatio}
-                    fontFamily={currentFontFamily}
-                    fontSize={currentFontSize}
-                    onStyleChange={handleStyleChange}
-                    onColorThemeChange={handleColorThemeChange}
-                    onCardRatioChange={handleCardRatioChange}
-                    onFontFamilyChange={handleFontFamilyChange}
-                    onFontSizeChange={handleFontSizeChange}
-                  />
-                </div>
-              )}
-            </div>
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
+        {/* 页面标题 */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-medium text-gray-900 mb-3">小红书文案生成器</h1>
+          <p className="text-gray-500">简单几步，生成优质文案</p>
+        </div>
+
+        {/* 主要内容区域 */}
+        <div className="space-y-8">
+          {/* 输入表单 */}
+          <div className="bg-white rounded-xl p-6">
+            <InputForm 
+              onGenerate={(context, theme, description, imageType, cardStyle, colorTheme, cardRatio, fontFamily, fontSize, contentMode) => 
+                handleGenerate(
+                  context, 
+                  theme, 
+                  description, 
+                  imageType, 
+                  cardStyle, 
+                  colorTheme, 
+                  cardRatio,
+                  fontFamily,
+                  fontSize,
+                  contentMode
+                )
+              } 
+              isLoading={isLoading} 
+            />
             
-            {/* 固定在底部的生成按钮 */}
-            <div className="sticky bottom-0 pb-2 pt-2 bg-white z-10">
+            {/* 生成按钮 */}
+            <div className="mt-6 flex justify-center">
               <button
                 onClick={() => {
-                  // 可以触发表单提交
-                  const submitButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
-                  if (submitButton) submitButton.click();
+                  const form = document.querySelector('form');
+                  if (form) {
+                    // 创建并触发提交事件
+                    const submitEvent = new Event('submit', {
+                      bubbles: true,
+                      cancelable: true,
+                    });
+                    form.dispatchEvent(submitEvent);
+                  }
                 }}
-                className="btn-primary w-full py-3 text-lg"
+                className="bg-black text-white px-8 py-2 rounded-full text-sm font-medium hover:bg-gray-900 transition-colors"
                 disabled={isLoading}
               >
-                {isLoading ? '生成中...' : '生成文案与图片'}
+                {isLoading ? '生成中...' : '吧唧一下'}
               </button>
             </div>
           </div>
-          
-          {/* 右侧结果展示区 */}
-          <div className="w-full md:w-2/3 flex flex-col overflow-hidden border-l border-gray-200">
-            {/* 使用标签页组件替换原来的结果展示区 */}
-            <TabPanel
-              tabs={tabs}
-              defaultTabId="result"
-              onTabChange={(tabId) => {
-                if (tabId === 'log') {
-                  logger.info('切换到日志面板');
-                } else {
-                  logger.info('切换到结果面板');
-                }
-              }}
-            />
-            
-            {/* 卡片导航按钮和下载按钮 - 使用sticky替代fixed */}
+
+          {/* 生成结果区域 */}
+          <div className="bg-white rounded-xl overflow-hidden">
+            {/* 对话框内容 */}
+            <div className="p-6">
+              {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="text-gray-500">正在生成中，请稍候...</div>
+                </div>
+              ) : results.length > 0 ? (
+                <ResultCard
+                  key={results[currentCardIndex].id}
+                  id={results[currentCardIndex].id}
+                  content={results[currentCardIndex].content}
+                  imageUrl={results[currentCardIndex].imageUrl}
+                  cardStyle={currentCardStyle}
+                  colorTheme={currentColorTheme}
+                  cardRatio={currentCardRatio}
+                  fontFamily={currentFontFamily}
+                  fontSize={currentFontSize}
+                  onDownload={handleDownload}
+                  onContentUpdate={handleContentUpdate}
+                  isGeneratingImage={isGeneratingImage}
+                  imageGenerationProgress={imageGenerationProgress}
+                  imageGenerationTotalSteps={imageGenerationTotalSteps}
+                  imageGenerationStatus={imageGenerationStatus}
+                />
+              ) : showExample ? (
+                <ResultCard
+                  key={exampleResult.id}
+                  id={exampleResult.id}
+                  content={exampleResult.content}
+                  imageUrl={exampleResult.imageUrl}
+                  cardStyle={currentCardStyle}
+                  colorTheme={currentColorTheme}
+                  cardRatio={currentCardRatio}
+                  fontFamily={currentFontFamily}
+                  fontSize={currentFontSize}
+                  onDownload={handleDownload}
+                  onContentUpdate={handleContentUpdate}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">请输入内容并点击生成按钮</p>
+                </div>
+              )}
+            </div>
+
+            {/* 操作按钮 */}
             {(results.length > 0 || showExample) && (
-              <div className="sticky bottom-0 w-full bg-white p-3 border-t border-gray-200 flex justify-between items-center z-10 shadow-md">
+              <div className="px-6 py-4 bg-gray-50 flex flex-wrap gap-3 justify-center">
+                {/* 导航按钮 */}
                 <div className="flex gap-2">
                   <button
                     onClick={handlePrevCard}
                     disabled={(currentCardIndex === 0 && !showExample) || isEditing || showExample}
-                    className={`btn-secondary ${((currentCardIndex === 0 && !showExample) || isEditing || showExample) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`p-2 rounded-full ${((currentCardIndex === 0 && !showExample) || isEditing || showExample) ? 'text-gray-300 bg-gray-100' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}
                   >
-                    上一个
+                    ←
                   </button>
                   <button
                     onClick={handleNextCard}
-                    disabled={(currentCardIndex === results.length - 1 && !showExample) || isEditing || showExample}
-                    className={`btn-secondary ${((currentCardIndex === results.length - 1 && !showExample) || isEditing || showExample) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={(currentCardIndex === results.length - 1) || isEditing || showExample}
+                    className={`p-2 rounded-full ${((currentCardIndex === results.length - 1) || isEditing || showExample) ? 'text-gray-300 bg-gray-100' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}
                   >
-                    下一个
+                    →
                   </button>
                 </div>
-                
-                <div className="flex gap-2">
-                  {renderBottomButtons()}
+
+                {/* 功能按钮 */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={startEditing}
+                    disabled={showExample}
+                    className="px-4 py-2 rounded-full text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    编辑文本
+                  </button>
+                  <button
+                    onClick={handleWebImageSearch}
+                    disabled={isGeneratingImage || isEditing}
+                    className="px-4 py-2 rounded-full text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    网络搜图
+                  </button>
+                  <button
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage || isEditing}
+                    className="px-4 py-2 rounded-full text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    AI生图
+                  </button>
+                  <button
+                    onClick={handleDownloadImage}
+                    className="px-4 py-2 rounded-full text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                  >
+                    下载图片
+                  </button>
+                  <button
+                    onClick={handleDownloadFullCard}
+                    disabled={isGeneratingCard || isEditing}
+                    className="px-4 py-2 rounded-full text-sm bg-black text-white hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingCard ? '生成中...' : '下载完整卡片'}
+                  </button>
+                  <button
+                    onClick={handleDownloadZip}
+                    disabled={isGeneratingCard || isEditing || showExample}
+                    className="px-4 py-2 rounded-full text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    下载压缩包
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
-      </div>
-      
-      <Footer />
-      
-      {/* 添加提示词修改弹窗 */}
-      {(results.length > 0 || showExample) && (
-        <ImagePromptModal
-          isOpen={isPromptModalOpen}
-          onClose={() => setIsPromptModalOpen(false)}
-          onSubmit={handleSubmitPrompt}
-          defaultPrompt={showExample ? parseContent(exampleResult.content).title : parseContent(results[currentCardIndex]?.content || '').title}
-        />
-      )}
-      
-      {/* 网络搜图弹窗 */}
+      </main>
+
+      {/* 弹窗组件 */}
+      <ImagePromptModal
+        isOpen={isPromptModalOpen}
+        onClose={() => setIsPromptModalOpen(false)}
+        onSubmit={handleSubmitPrompt}
+        defaultPrompt={showExample ? parseContent(exampleResult.content).title : parseContent(results[currentCardIndex]?.content || '').title}
+      />
       <WebImageSearchModal
         isOpen={isWebSearchModalOpen}
         onClose={() => setIsWebSearchModalOpen(false)}

@@ -518,437 +518,35 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
   // 根据卡片样式渲染不同的内容
   const renderCardContent = () => {
-    // 无图模式判断
-    const isTextOnly = cardStyle === 'text-only' || (!imageUrl && !isGeneratingImage);
+    const { title, body, tags } = parseContent();
     
-    // 内容编辑模式
-    if (isEditing) {
-      return (
-        <div className="p-4 bg-white rounded-lg h-full overflow-y-auto">
-          <textarea
-            className="w-full p-2 border border-gray-300 rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-redbook"
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            autoFocus
-            style={{
-              minHeight: '200px',
-              height: 'auto',
-              resize: 'vertical', // 允许用户垂直调整大小
-              fontFamily: fontStyleFamily,
-              fontSize: fontSizeStyles.body
-            }}
-          />
-        </div>
-      );
-    }
-
-    // 样式渲染
-    switch (cardStyle) {
-      case 'left-image':
-        return (
-          <div className="flex flex-col md:flex-row overflow-hidden rounded-lg h-full" style={{ 
-            backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-            color: colors.text,
-            height: '100%',
-            minHeight: '200px',
-            fontFamily: fontStyleFamily
-          }}>
-            {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ 
-                minHeight: '150px',
-                height: '100%',
-                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
-              }}>
-                {renderImageContent()}
-              </div>
-            )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
-              <h3 className="text-xl font-bold mb-4" style={{ 
-                color: colors.primary,
-                fontFamily: fontStyleFamily,
-                fontSize: fontSizeStyles.title
-              }}>{title}</h3>
-              <div className="mb-6 flex-grow">
-                {renderMarkdownContent(body)}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block px-3 py-1 rounded-full" 
-                    style={{ 
-                      backgroundColor: colors.secondary,
-                      color: colors.primary,
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.tag
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 'right-image':
-        return (
-          <div 
-            className="flex flex-col md:flex-row-reverse overflow-hidden rounded-lg h-full" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              color: colors.text,
-              height: '100%',
-              minHeight: '200px',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            {!isTextOnly && (
-              <div className="md:w-1/2 overflow-hidden h-full relative" style={{ 
-                minHeight: '150px',
-                height: '100%',
-                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3'
-              }}>
-                {renderImageContent()}
-              </div>
-            )}
-            <div className={`p-6 ${isTextOnly ? 'w-full' : 'md:w-1/2'} flex flex-col flex-grow overflow-auto h-full`} style={{ minHeight: '150px', maxHeight: '100%' }}>
-              <h3 className="text-xl font-bold mb-4" style={{ 
-                color: colors.primary,
-                fontFamily: fontStyleFamily,
-                fontSize: fontSizeStyles.title
-              }}>{title}</h3>
-              <div className="mb-6 flex-grow">
-                {renderMarkdownContent(body)}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block px-3 py-1 rounded-full" 
-                    style={{ 
-                      backgroundColor: colors.secondary,
-                      color: colors.primary,
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.tag
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 'overlay':
-        return (
-          <div 
-            className="relative overflow-hidden rounded-lg h-full" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              height: '100%',
-              minHeight: '200px',
-              aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            {!isTextOnly && renderImageContent({ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 })}
-            <div 
-              className="absolute inset-0 p-6 flex flex-col justify-between overflow-auto" 
-              style={{ 
-                background: isTextOnly 
-                  ? (colorTheme === 'gradient' ? colors.background : colors.secondary)
-                  : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
-                zIndex: 10,
-                height: '100%',
-                fontFamily: fontStyleFamily
-              }}
-            >
-              <div className="flex-grow"></div>
-              <div>
-                <h3 
-                  className="text-xl font-bold mb-4" 
-                  style={{ 
-                    color: isTextOnly ? colors.primary : '#fff',
-                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
-                    fontFamily: fontStyleFamily,
-                    fontSize: fontSizeStyles.title
-                  }}
-                >
-                  {title}
-                </h3>
-                <div className="mb-6">
-                  {renderMarkdownContent(body, "", { 
-                    color: isTextOnly ? colors.text : '#fff',
-                    textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.8)',
-                    fontFamily: fontStyleFamily,
-                    fontSize: fontSizeStyles.body
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag, index) => (
-                    <span 
-                      key={index} 
-                      className="inline-block px-3 py-1 rounded-full" 
-                      style={{ 
-                        backgroundColor: 'rgba(255,255,255,0.3)',
-                        color: isTextOnly ? colors.primary : '#fff',
-                        textShadow: isTextOnly ? 'none' : '0px 1px 2px rgba(0,0,0,0.5)',
-                        fontFamily: fontStyleFamily,
-                        fontSize: fontSizeStyles.tag
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 'collage':
-        return (
-          <div 
-            className="grid grid-cols-2 gap-3 p-4 rounded-lg h-full" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              color: colors.text,
-              height: '100%',
-              gridTemplateRows: 'auto 1fr auto',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            <div className="col-span-2">
-              <h3 className="text-xl font-bold mb-4" style={{ 
-                color: colors.primary,
-                fontFamily: fontStyleFamily,
-                fontSize: fontSizeStyles.title
-              }}>{title}</h3>
+    return (
+      <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+        {imageUrl && !isGeneratingImage ? (
+          <div className="relative">
+            <div className="aspect-[4/5] relative">
+              <img
+                src={imageUrl}
+                alt="Generated content"
+                className="w-full h-full object-cover"
+              />
+              {/* 增强渐变遮罩效果 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
             </div>
             
-            {!isTextOnly && (
-              <div className="overflow-hidden rounded-lg h-full" style={{ 
-                aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
-                fontFamily: fontStyleFamily
-              }}>
-                {renderImageContent()}
-              </div>
-            )}
-            
-            <div className={`${isTextOnly ? 'col-span-2' : ''} p-3 flex flex-col overflow-auto h-full`} style={{ backgroundColor: colors.secondary, borderRadius: '0.5rem', fontFamily: fontStyleFamily }}>
-              <div className="text-sm mb-4 flex-grow">
-                {renderMarkdownContent(body, "text-sm")}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {tags.slice(0, 3).map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block px-2 py-1 rounded-full text-xs" 
-                    style={{ 
-                      backgroundColor: colors.primary,
-                      color: '#fff',
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.tag
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            
-            {!isTextOnly && tags.length > 3 && (
-              <div className="col-span-2 flex flex-wrap gap-2 mt-2">
-                {tags.slice(3).map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block px-3 py-1 rounded-full" 
-                    style={{ 
-                      backgroundColor: colors.secondary,
-                      color: colors.primary,
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.tag
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-        
-      case 'magazine':
-        return (
-          <div 
-            className="overflow-hidden rounded-lg h-full flex flex-col" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              color: colors.text,
-              height: '100%',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            <div className="p-6 relative flex-grow flex flex-col h-full">
-              <div className="border-b pb-3 mb-6" style={{ borderColor: colors.primary }}>
-                <h3 className="text-2xl font-bold" style={{ 
-                  color: colors.primary,
-                  fontFamily: fontStyleFamily,
-                  fontSize: fontSizeStyles.title
-                }}>{title}</h3>
-              </div>
-              
-              <div className="flex flex-col md:flex-row gap-6 flex-grow overflow-auto">
-                {!isTextOnly && (
-                  <div className="md:w-1/3 h-full">
-                    <div 
-                      className="overflow-hidden rounded-lg shadow-md h-full" 
-                      style={{ 
-                        borderColor: colors.primary, 
-                        borderWidth: '1px',
-                        aspectRatio: cardRatio === '1:1' ? '1/1' : cardRatio === '4:5' ? '4/5' : '2/3',
-                        fontFamily: fontStyleFamily
-                      }}
-                    >
-                      {renderImageContent()}
-                    </div>
-                  </div>
-                )}
-                
-                <div className={`${isTextOnly ? 'w-full' : 'md:w-2/3'} flex flex-col flex-grow overflow-auto`}>
-                  <div 
-                    className="markdown-container mb-6 flex-grow"
-                    style={{ 
-                      lineHeight: '1.8',
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.body
-                    }}
-                  >
-                    {renderMarkdownContent(body, "markdown-container first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2")}
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    {tags.map((tag, index) => (
-                      <span 
-                        key={index} 
-                        className="inline-block px-3 py-1 rounded-md" 
-                        style={{ 
-                          backgroundColor: colors.secondary,
-                          color: colors.primary,
-                          fontFamily: fontStyleFamily,
-                          fontSize: fontSizeStyles.tag
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'text-only':
-        return (
-          <div 
-            className="p-6 rounded-lg h-full flex flex-col overflow-auto" 
-            style={{ 
-              background: colorTheme === 'gradient' 
-                ? colors.background 
-                : (colorTheme === 'dark' ? colors.background : '#fff'),
-              color: colors.text,
-              height: '100%',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            <h3 className="text-2xl font-bold mb-6" style={{ 
-              color: colors.primary,
-              fontFamily: fontStyleFamily,
-              fontSize: fontSizeStyles.title
-            }}>{title}</h3>
-            <div className="mb-8 text-lg flex-grow" style={{ lineHeight: '1.8', fontFamily: fontStyleFamily, fontSize: fontSizeStyles.body }}>
-              {renderMarkdownContent(body, "text-lg")}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag, index) => (
-                <span 
-                  key={index} 
-                  className="inline-block px-3 py-1 rounded-full" 
-                  style={{ 
-                    backgroundColor: colors.secondary,
-                    color: colors.primary,
-                    fontFamily: fontStyleFamily,
-                    fontSize: fontSizeStyles.tag
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        );
-        
-      // 默认样式（标准布局）
-      case 'default':
-      default:
-        return (
-          <div 
-            className="overflow-hidden rounded-lg h-full flex flex-col" 
-            style={{ 
-              backgroundColor: colorTheme === 'dark' ? colors.background : '#fff',
-              color: colors.text,
-              height: '100%',
-              minHeight: '200px',
-              fontFamily: fontStyleFamily
-            }}
-          >
-            {!isTextOnly && (
-              <div 
-                className="w-full overflow-hidden relative flex-shrink-0" 
-                style={{ 
-                  height: '60%',
-                  minHeight: '150px',
-                  maxHeight: '60%'
-                }}
-              >
-                {renderImageContent()}
-              </div>
-            )}
-            <div 
-              className="p-6 flex flex-col flex-grow overflow-auto" 
-              style={{ 
-                height: isTextOnly ? '100%' : '40%',
-                minHeight: '150px',
-                maxHeight: isTextOnly ? '100%' : '40%'
-              }}
-            >
-              <h3 
-                className="text-xl font-bold mb-4" 
-                style={{ 
-                  color: colors.primary,
-                  fontFamily: fontStyleFamily, 
-                  fontSize: fontSizeStyles.title
-                }}
-              >
-                {title}
+            {/* 优化文字显示 */}
+            <div className="absolute inset-0 flex flex-col justify-end p-6">
+              <h3 className="text-2xl font-bold mb-4 text-white drop-shadow-lg">
+                {renderMarkdownContent(title)}
               </h3>
-              <div className="mb-6 flex-grow">
+              <div className="text-base leading-relaxed text-white/95 drop-shadow-md mb-4 line-clamp-6">
                 {renderMarkdownContent(body)}
               </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block px-3 py-1 rounded-full" 
-                    style={{ 
-                      backgroundColor: colors.secondary,
-                      color: colors.primary,
-                      fontFamily: fontStyleFamily,
-                      fontSize: fontSizeStyles.tag
-                    }}
+                  <span
+                    key={index}
+                    className="inline-block px-4 py-1.5 text-sm bg-white/25 backdrop-blur-sm rounded-full text-white font-medium shadow-sm"
                   >
                     {tag}
                   </span>
@@ -956,8 +554,52 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </div>
             </div>
           </div>
-        );
-    }
+        ) : isGeneratingImage ? (
+          // 图片生成中的状态
+          <div className="aspect-[4/5] bg-gray-50 flex items-center justify-center p-6">
+            <div className="text-center w-full">
+              <div className="mb-4">
+                <div className="text-sm text-gray-500 mb-2">正在生成图片...</div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-black h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(imageGenerationProgress / imageGenerationTotalSteps) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                {imageGenerationStatus === 'PENDING' ? '准备中...' :
+                 imageGenerationStatus === 'PROCESSING' ? '生成中...' :
+                 imageGenerationStatus === 'COMPLETED' ? '完成' :
+                 '生成中...'}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // 纯文本模式优化
+          <div className="aspect-[4/5] bg-gradient-to-br from-gray-50 to-white p-8">
+            <div className="h-full flex flex-col">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                {renderMarkdownContent(title)}
+              </h3>
+              <div className="flex-1 text-base text-gray-700 leading-relaxed mb-6">
+                {renderMarkdownContent(body)}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-block px-4 py-1.5 text-sm bg-black/5 text-gray-700 rounded-full font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // 添加一个确保窗口正确渲染的检查
@@ -979,18 +621,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
   }, [imageUrl, cardStyle, colorTheme]);
 
   return (
-    <div className="mb-6 h-full flex flex-col" data-card-id={id}>
-      <div 
-        ref={cardRef} 
-        className="bg-white rounded-lg border border-gray-200 shadow-md h-full"
-        style={{ 
-          ...getRatioStyle(), // 应用比例样式
-          minHeight: '200px',
-          fontFamily: fontStyleFamily
-        }}
-      >
-        {renderCardContent()}
-      </div>
+    <div ref={cardRef}>
+      {renderCardContent()}
     </div>
   );
 };
